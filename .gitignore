@@ -1,0 +1,7 @@
+# Git ignore file
+/vendor/*
+/_data/*
+/app/config/config.yml
+/app/cache/*
+/app/logs/*
+/local/config/database.inc.php

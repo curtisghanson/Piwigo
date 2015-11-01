@@ -1,0 +1,22 @@
+{
+    "name": "piwigo/piwigo",
+    "authors": [
+        {
+            "name": "curtisghanson",
+            "email": "curtisghanson@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "": "src/"
+        }
+    },
+    "require": {
+        "doctrine/dbal": "^2.5",
+        "symfony/console": "^2.7",
+        "twig/twig": "^1.23",
+        "symfony/http-foundation": "^2.7",
+        "symfony/yaml": "^2.7",
+        "symfony/config": "^2.7"
+    }
+}
