@@ -1,32 +1,8 @@
 <?php
-// +-----------------------------------------------------------------------+
-// | Piwigo - a PHP based photo gallery                                    |
-// +-----------------------------------------------------------------------+
-// | Copyright(C) 2008-2014 Piwigo Team                  http://piwigo.org |
-// | Copyright(C) 2003-2008 PhpWebGallery Team    http://phpwebgallery.net |
-// | Copyright(C) 2002-2003 Pierrick LE GALL   http://le-gall.net/pierrick |
-// +-----------------------------------------------------------------------+
-// | This program is free software; you can redistribute it and/or modify  |
-// | it under the terms of the GNU General Public License as published by  |
-// | the Free Software Foundation                                          |
-// |                                                                       |
-// | This program is distributed in the hope that it will be useful, but   |
-// | WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |
-// | General Public License for more details.                              |
-// |                                                                       |
-// | You should have received a copy of the GNU General Public License     |
-// | along with this program; if not, write to the Free Software           |
-// | Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, |
-// | USA.                                                                  |
-// +-----------------------------------------------------------------------+
-
-if(!defined("PHPWG_ROOT_PATH"))
-{
-  die('Hacking attempt!');
-}
-
+require_once __DIR__ . '/../vendor/autoload.php';
 include_once(PHPWG_ROOT_PATH.'admin/include/functions.php');
+
+use Piwigo\Utils\DateTimeUtils;
 
 // +-----------------------------------------------------------------------+
 // | Check Access and exit when user status is not ok                      |
@@ -220,14 +196,12 @@ $image_file = $row['file'];
 // |                             template init                             |
 // +-----------------------------------------------------------------------+
 
-$template->set_filenames(
-  array(
+$template->set_filenames(array(
     'picture_modify' => 'picture_modify.tpl'
-    )
-  );
+));
 
-$admin_url_start = $admin_photo_base_url.'-properties';
-$admin_url_start.= isset($_GET['cat_id']) ? '&amp;cat_id='.$_GET['cat_id'] : '';
+$admin_url_start  = $admin_photo_base_url.'-properties';
+$admin_url_start .= isset($_GET['cat_id']) ? '&amp;cat_id=' . $_GET['cat_id'] : '';
 
 $src_image = new SrcImage($row);
 
@@ -236,24 +210,17 @@ $template->assign(
     'tag_selection' => $tag_selection,
     'U_SYNC' => $admin_url_start.'&amp;sync_metadata=1',
     'U_DELETE' => $admin_url_start.'&amp;delete=1&amp;pwg_token='.get_pwg_token(),
-
     'PATH'=>$row['path'],
-
     'TN_SRC' => DerivativeImage::url(IMG_THUMB, $src_image),
     'FILE_SRC' => DerivativeImage::url(IMG_LARGE, $src_image),
-
     'NAME' =>
       isset($_POST['name']) ?
         stripslashes($_POST['name']) : @$row['name'],
 
     'TITLE' => render_element_name($row),
-
     'DIMENSIONS' => @$row['width'].' * '.@$row['height'],
-
     'FILESIZE' => @$row['filesize'].' KB',
-
-    'REGISTRATION_DATE' => format_date($row['date_available']),
-
+    'REGISTRATION_DATE' => DateTimeUtils::formatDate($row['date_available']),
     'AUTHOR' => htmlspecialchars(
       isset($_POST['author'])
         ? stripslashes($_POST['author'])
@@ -261,7 +228,6 @@ $template->assign(
       ),
 
     'DATE_CREATION' => $row['date_creation'],
-
     'DESCRIPTION' =>
       htmlspecialchars( isset($_POST['description']) ?
         stripslashes($_POST['description']) : @$row['comment'] ),
@@ -285,13 +251,17 @@ while ($user_row = pwg_db_fetch_assoc($result))
 }
 
 $intro_vars = array(
-  'file' => l10n('Original file : %s', $row['file']),
-  'add_date' => l10n('Posted %s on %s', time_since($row['date_available'], 'year'), format_date($row['date_available'], array('day', 'month', 'year'))),
-  'added_by' => l10n('Added by %s', $row['added_by']),
-  'size' => $row['width'].'&times;'.$row['height'].' pixels, '.sprintf('%.2f', $row['filesize']/1024).'MB',
-  'stats' => l10n('Visited %d times', $row['hit']),
-  'id' => l10n('Numeric identifier : %d', $row['id']),
-  );
+    'file'     => l10n('Original file : %s', $row['file']),
+    'add_date' => l10n(
+        'Posted %s on %s',
+        DateTimeUtils::timeSince($row['date_available'], 'year'),
+        DateTimeUtils::formatDate($row['date_available'], array('day', 'month', 'year'))
+    ),
+    'added_by' => l10n('Added by %s', $row['added_by']),
+    'size'     => $row['width'].'&times;'.$row['height'].' pixels, '.sprintf('%.2f', $row['filesize']/1024).'MB',
+    'stats'    => l10n('Visited %d times', $row['hit']),
+    'id'       => l10n('Numeric identifier : %d', $row['id']),
+);
 
 if ($conf['rate'] and !empty($row['rating_score']))
 {

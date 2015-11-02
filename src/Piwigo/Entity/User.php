@@ -8,6 +8,7 @@ class User
     private $username;
     private $password;
     private $mailAddress;
+    private $status;
 
     public function getId()
     {
@@ -48,5 +49,17 @@ class User
     public function getMailAddress()
     {
         return $this->mailAddress;
+    }
+
+    public function setStatus($status)
+    {
+        $this->status = $status;
+
+        return $this;
+    }
+
+    public function getStatus()
+    {
+        return $this->status;
     }
 }

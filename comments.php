@@ -1,29 +1,8 @@
 <?php
-// +-----------------------------------------------------------------------+
-// | Piwigo - a PHP based photo gallery                                    |
-// +-----------------------------------------------------------------------+
-// | Copyright(C) 2008-2014 Piwigo Team                  http://piwigo.org |
-// | Copyright(C) 2003-2008 PhpWebGallery Team    http://phpwebgallery.net |
-// | Copyright(C) 2002-2003 Pierrick LE GALL   http://le-gall.net/pierrick |
-// +-----------------------------------------------------------------------+
-// | This program is free software; you can redistribute it and/or modify  |
-// | it under the terms of the GNU General Public License as published by  |
-// | the Free Software Foundation                                          |
-// |                                                                       |
-// | This program is distributed in the hope that it will be useful, but   |
-// | WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |
-// | General Public License for more details.                              |
-// |                                                                       |
-// | You should have received a copy of the GNU General Public License     |
-// | along with this program; if not, write to the Free Software           |
-// | Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, |
-// | USA.                                                                  |
-// +-----------------------------------------------------------------------+
+require_once __DIR__ . '/vendor/autoload.php';
 
-// +-----------------------------------------------------------------------+
-// |                           initialization                              |
-// +-----------------------------------------------------------------------+
+use Piwigo\Utils\DateTimeUtils;
+
 define('PHPWG_ROOT_PATH','./');
 include_once(PHPWG_ROOT_PATH.'include/common.inc.php');
 include_once(PHPWG_ROOT_PATH.'include/functions_comment.inc.php');
@@ -479,15 +458,15 @@ SELECT *
     }
 
     $tpl_comment = array(
-      'ID' => $comment['comment_id'],
-      'U_PICTURE' => $url,
-      'src_image' => $src_image,
-      'ALT' => $name,
-      'AUTHOR' => trigger_change('render_comment_author', $comment['author']),
-      'WEBSITE_URL' => $comment['website_url'],
-      'DATE'=>format_date($comment['date'], array('day_name','day','month','year','time')),
-      'CONTENT'=>trigger_change('render_comment_content',$comment['content']),
-      );
+        'ID'          => $comment['comment_id'],
+        'U_PICTURE'   => $url,
+        'src_image'   => $src_image,
+        'ALT'         => $name,
+        'AUTHOR'      => trigger_change('render_comment_author', $comment['author']),
+        'WEBSITE_URL' => $comment['website_url'],
+        'DATE'        => DateTimeUtils::formatDate($comment['date'], array('day_name','day','month','year','time')),
+        'CONTENT'     => trigger_change('render_comment_content',$comment['content']),
+    );
 
     if (is_admin())
     {

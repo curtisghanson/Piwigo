@@ -1,25 +1,7 @@
 <?php
-// +-----------------------------------------------------------------------+
-// | Piwigo - a PHP based photo gallery                                    |
-// +-----------------------------------------------------------------------+
-// | Copyright(C) 2008-2014 Piwigo Team                  http://piwigo.org |
-// | Copyright(C) 2003-2008 PhpWebGallery Team    http://phpwebgallery.net |
-// | Copyright(C) 2002-2003 Pierrick LE GALL   http://le-gall.net/pierrick |
-// +-----------------------------------------------------------------------+
-// | This program is free software; you can redistribute it and/or modify  |
-// | it under the terms of the GNU General Public License as published by  |
-// | the Free Software Foundation                                          |
-// |                                                                       |
-// | This program is distributed in the hope that it will be useful, but   |
-// | WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |
-// | General Public License for more details.                              |
-// |                                                                       |
-// | You should have received a copy of the GNU General Public License     |
-// | along with this program; if not, write to the Free Software           |
-// | Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, |
-// | USA.                                                                  |
-// +-----------------------------------------------------------------------+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Piwigo\Utils\DateTimeUtils;
 
 if (!defined('PHPWG_ROOT_PATH'))
 {
@@ -119,7 +101,7 @@ if (isset($_POST['submit'])
     and ($_POST['sync'] == 'dirs' or $_POST['sync'] == 'files')
     and !$general_failure)
 {
-  $start = get_moment();
+  $start = DateTimeUtils::getMoment();
   // which categories to update ?
   $query = '
 SELECT id, uppercats, global_rank, status, visible
@@ -444,7 +426,7 @@ SELECT id_uppercat, MAX(rank)+1 AS next_rank
   }
 
   $template->append('footer_elements', '<!-- scanning dirs : '
-    . get_elapsed_time($start, get_moment())
+    . DateTimeUtils::getElapsedTime($start, DateTimeUtils::getMoment())
     . ' -->' );
 }
 // +-----------------------------------------------------------------------+
@@ -453,12 +435,12 @@ SELECT id_uppercat, MAX(rank)+1 AS next_rank
 if (isset($_POST['submit']) and $_POST['sync'] == 'files'
       and !$general_failure)
 {
-  $start_files = get_moment();
+  $start_files = DateTimeUtils::getMoment();
   $start= $start_files;
 
   $fs = $site_reader->get_elements($basedir);
   $template->append('footer_elements', '<!-- get_elements: '
-    . get_elapsed_time($start, get_moment())
+    . DateTimeUtils::getElapsedTime($start, DateTimeUtils::getMoment())
     . ' -->' );
 
   $cat_ids = array_diff(array_keys($db_categories), $to_delete);
@@ -482,7 +464,7 @@ SELECT id, path
   // next element id available
   $next_element_id = pwg_db_nextval('id', IMAGES_TABLE);
 
-  $start = get_moment();
+  $start = DateTimeUtils::getMoment();
 
   $inserts = array();
   $insert_links = array();
@@ -585,7 +567,7 @@ SELECT id, path
   }
 
   $template->append('footer_elements', '<!-- scanning files : '
-    . get_elapsed_time($start_files, get_moment())
+    . DateTimeUtils::getElapsedTime($start_files, DateTimeUtils::getMoment())
     . ' -->' );
 }
 
@@ -598,21 +580,21 @@ if (isset($_POST['submit'])
 {
   if (!$simulate)
   {
-    $start = get_moment();
+    $start = DateTimeUtils::getMoment();
     update_category('all');
     $template->append('footer_elements', '<!-- update_category(all) : '
-      . get_elapsed_time($start,get_moment())
+      . DateTimeUtils::getElapsedTime($start,DateTimeUtils::getMoment())
       . ' -->' );
-    $start = get_moment();
+    $start = DateTimeUtils::getMoment();
     update_global_rank();
     $template->append('footer_elements', '<!-- ordering categories : '
-      . get_elapsed_time($start, get_moment())
+      . DateTimeUtils::getElapsedTime($start, DateTimeUtils::getMoment())
       . ' -->');
   }
 
   if ($_POST['sync'] == 'files')
   {
-    $start = get_moment();
+    $start = DateTimeUtils::getMoment();
     $opts['category_id'] = '';
     $opts['recursive'] = true;
     if (isset($_POST['cat']))
@@ -627,9 +609,9 @@ if (isset($_POST['submit'])
                           $opts['recursive'],
                           false);
     $template->append('footer_elements', '<!-- get_filelist : '
-      . get_elapsed_time($start, get_moment())
+      . DateTimeUtils::getElapsedTime($start, DateTimeUtils::getMoment())
       . ' -->');
-    $start = get_moment();
+    $start = DateTimeUtils::getMoment();
 
     $datas = array();
     foreach ( $files as $id=>$file )
@@ -659,7 +641,7 @@ if (isset($_POST['submit'])
         );
     }
     $template->append('footer_elements', '<!-- update files : '
-      . get_elapsed_time($start,get_moment())
+      . DateTimeUtils::getElapsedTime($start,DateTimeUtils::getMoment())
       . ' -->');
   }// end if sync files
 }
@@ -702,16 +684,16 @@ if (isset($_POST['submit']) and isset($_POST['sync_meta'])
       $opts['recursive'] = false;
     }
   }
-  $start = get_moment();
+  $start = DateTimeUtils::getMoment();
   $files = get_filelist($opts['category_id'], $site_id,
                         $opts['recursive'],
                         $opts['only_new']);
 
   $template->append('footer_elements', '<!-- get_filelist : '
-    . get_elapsed_time($start, get_moment())
+    . DateTimeUtils::getElapsedTime($start, DateTimeUtils::getMoment())
     . ' -->');
 
-  $start = get_moment();
+  $start = DateTimeUtils::getMoment();
   $datas = array();
   $tags_of = array();
 
@@ -777,7 +759,7 @@ if (isset($_POST['submit']) and isset($_POST['sync_meta'])
   }
 
   $template->append('footer_elements', '<!-- metadata update : '
-    . get_elapsed_time($start, get_moment())
+    . DateTimeUtils::getElapsedTime($start, DateTimeUtils::getMoment())
     . ' -->');
 
   $template->assign(

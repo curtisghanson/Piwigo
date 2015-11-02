@@ -1,14 +1,13 @@
 <?php
 require_once __DIR__ . '/../../vendor/autoload.php';
+include_once(PHPWG_ROOT_PATH.'admin/include/functions_metadata.php');
 
 use Piwigo\Security\Authorization as Auth;
+use Piwigo\Utils\FileUtils;
 
 /**
  * @package functions\admin\___
  */
-
-include_once(PHPWG_ROOT_PATH.'admin/include/functions_metadata.php');
-
 
 /**
  * Deletes a site and call delete_categories for each primary category of the site
@@ -998,7 +997,7 @@ function get_fs($path, $recursive = true)
 
         if (is_file($path.'/'.$node))
         {
-          $extension = get_extension($node);
+          $extension = FileUtils::getExtension($node);
 
           if (isset($conf['flip_picture_ext'][$extension]))
           {
@@ -1924,7 +1923,7 @@ function get_extents($start='')
       $extents = array_merge($extents, get_extents($path));
     }
     elseif ( !is_link($path) and file_exists($path)
-            and get_extension($path) == 'tpl' )
+            and FileUtils::getExtension($path) == 'tpl' )
     {
       $extents[] = substr($path, 21);
     }

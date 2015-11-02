@@ -18,55 +18,6 @@ include_once( PHPWG_ROOT_PATH .'include/derivative_params.inc.php');
 include_once( PHPWG_ROOT_PATH .'include/template.class.php');
 
 /**
- * returns the current microsecond since Unix epoch
- *
- * @return int
- */
-function micro_seconds()
-{
-  $t1 = explode(' ', microtime());
-  $t2 = explode('.', $t1[0]);
-  $t2 = $t1[1].substr($t2[1], 0, 6);
-  return $t2;
-}
-
-/**
- * returns a float value coresponding to the number of seconds since
- * the unix epoch (1st January 1970) and the microseconds are precised
- * e.g. 1052343429.89276600
- *
- * @return float
- */
-function get_moment()
-{
-  return microtime(true);
-}
-
-/**
- * returns the number of seconds (with 3 decimals precision)
- * between the start time and the end time given
- *
- * @param float $start
- * @param float $end
- * @return string "$TIME s"
- */
-function get_elapsed_time($start, $end)
-{
-  return number_format($end - $start, 3, '.', ' ').' s';
-}
-
-/**
- * returns the part of the string after the last "."
- *
- * @param string $filename
- * @return string
- */
-function get_extension($filename)
-{
-  return substr(strrchr( $filename, '.' ), 1, strlen ( $filename ));
-}
-
-/**
  * returns the part of the string before the last ".".
  * get_filename_wo_extension('test.tar.gz') = 'test.tar'
  *
@@ -135,223 +86,6 @@ function mkgetdir($dir, $flags=MKGETDIR_DEFAULT)
   return true;
 }
 
-/**
- * finds out if a string is in ASCII, UTF-8 or other encoding
- *
- * @param string $str
- * @return int *0* if _$str_ is ASCII, *1* if UTF-8, *-1* otherwise
- */
-function qualify_utf8($Str)
-{
-  $ret = 0;
-  for ($i=0; $i<strlen($Str); $i++)
-  {
-    if (ord($Str[$i]) < 0x80) continue; # 0bbbbbbb
-    $ret = 1;
-    if ((ord($Str[$i]) & 0xE0) == 0xC0) $n=1; # 110bbbbb
-    elseif ((ord($Str[$i]) & 0xF0) == 0xE0) $n=2; # 1110bbbb
-    elseif ((ord($Str[$i]) & 0xF8) == 0xF0) $n=3; # 11110bbb
-    elseif ((ord($Str[$i]) & 0xFC) == 0xF8) $n=4; # 111110bb
-    elseif ((ord($Str[$i]) & 0xFE) == 0xFC) $n=5; # 1111110b
-    else return -1; # Does not match any model
-    for ($j=0; $j<$n; $j++)
-    { # n bytes matching 10bbbbbb follow ?
-      if ((++$i == strlen($Str)) || ((ord($Str[$i]) & 0xC0) != 0x80))
-        return -1;
-    }
-  }
-  return $ret;
-}
-
-/**
- * Remove accents from a UTF-8 or ISO-8859-1 string (from wordpress)
- *
- * @param string $string
- * @return string
- */
-function remove_accents($string)
-{
-  $utf = qualify_utf8($string);
-  if ($utf == 0)
-  {
-    return $string; // ascii
-  }
-
-  if ($utf > 0)
-  {
-    $chars = array(
-    // Decompositions for Latin-1 Supplement
-    "\xc3\x80"=>'A', "\xc3\x81"=>'A',
-    "\xc3\x82"=>'A', "\xc3\x83"=>'A',
-    "\xc3\x84"=>'A', "\xc3\x85"=>'A',
-    "\xc3\x87"=>'C', "\xc3\x88"=>'E',
-    "\xc3\x89"=>'E', "\xc3\x8a"=>'E',
-    "\xc3\x8b"=>'E', "\xc3\x8c"=>'I',
-    "\xc3\x8d"=>'I', "\xc3\x8e"=>'I',
-    "\xc3\x8f"=>'I', "\xc3\x91"=>'N',
-    "\xc3\x92"=>'O', "\xc3\x93"=>'O',
-    "\xc3\x94"=>'O', "\xc3\x95"=>'O',
-    "\xc3\x96"=>'O', "\xc3\x99"=>'U',
-    "\xc3\x9a"=>'U', "\xc3\x9b"=>'U',
-    "\xc3\x9c"=>'U', "\xc3\x9d"=>'Y',
-    "\xc3\x9f"=>'s', "\xc3\xa0"=>'a',
-    "\xc3\xa1"=>'a', "\xc3\xa2"=>'a',
-    "\xc3\xa3"=>'a', "\xc3\xa4"=>'a',
-    "\xc3\xa5"=>'a', "\xc3\xa7"=>'c',
-    "\xc3\xa8"=>'e', "\xc3\xa9"=>'e',
-    "\xc3\xaa"=>'e', "\xc3\xab"=>'e',
-    "\xc3\xac"=>'i', "\xc3\xad"=>'i',
-    "\xc3\xae"=>'i', "\xc3\xaf"=>'i',
-    "\xc3\xb1"=>'n', "\xc3\xb2"=>'o',
-    "\xc3\xb3"=>'o', "\xc3\xb4"=>'o',
-    "\xc3\xb5"=>'o', "\xc3\xb6"=>'o',
-    "\xc3\xb9"=>'u', "\xc3\xba"=>'u',
-    "\xc3\xbb"=>'u', "\xc3\xbc"=>'u',
-    "\xc3\xbd"=>'y', "\xc3\xbf"=>'y',
-    // Decompositions for Latin Extended-A
-    "\xc4\x80"=>'A', "\xc4\x81"=>'a',
-    "\xc4\x82"=>'A', "\xc4\x83"=>'a',
-    "\xc4\x84"=>'A', "\xc4\x85"=>'a',
-    "\xc4\x86"=>'C', "\xc4\x87"=>'c',
-    "\xc4\x88"=>'C', "\xc4\x89"=>'c',
-    "\xc4\x8a"=>'C', "\xc4\x8b"=>'c',
-    "\xc4\x8c"=>'C', "\xc4\x8d"=>'c',
-    "\xc4\x8e"=>'D', "\xc4\x8f"=>'d',
-    "\xc4\x90"=>'D', "\xc4\x91"=>'d',
-    "\xc4\x92"=>'E', "\xc4\x93"=>'e',
-    "\xc4\x94"=>'E', "\xc4\x95"=>'e',
-    "\xc4\x96"=>'E', "\xc4\x97"=>'e',
-    "\xc4\x98"=>'E', "\xc4\x99"=>'e',
-    "\xc4\x9a"=>'E', "\xc4\x9b"=>'e',
-    "\xc4\x9c"=>'G', "\xc4\x9d"=>'g',
-    "\xc4\x9e"=>'G', "\xc4\x9f"=>'g',
-    "\xc4\xa0"=>'G', "\xc4\xa1"=>'g',
-    "\xc4\xa2"=>'G', "\xc4\xa3"=>'g',
-    "\xc4\xa4"=>'H', "\xc4\xa5"=>'h',
-    "\xc4\xa6"=>'H', "\xc4\xa7"=>'h',
-    "\xc4\xa8"=>'I', "\xc4\xa9"=>'i',
-    "\xc4\xaa"=>'I', "\xc4\xab"=>'i',
-    "\xc4\xac"=>'I', "\xc4\xad"=>'i',
-    "\xc4\xae"=>'I', "\xc4\xaf"=>'i',
-    "\xc4\xb0"=>'I', "\xc4\xb1"=>'i',
-    "\xc4\xb2"=>'IJ', "\xc4\xb3"=>'ij',
-    "\xc4\xb4"=>'J', "\xc4\xb5"=>'j',
-    "\xc4\xb6"=>'K', "\xc4\xb7"=>'k',
-    "\xc4\xb8"=>'k', "\xc4\xb9"=>'L',
-    "\xc4\xba"=>'l', "\xc4\xbb"=>'L',
-    "\xc4\xbc"=>'l', "\xc4\xbd"=>'L',
-    "\xc4\xbe"=>'l', "\xc4\xbf"=>'L',
-    "\xc5\x80"=>'l', "\xc5\x81"=>'L',
-    "\xc5\x82"=>'l', "\xc5\x83"=>'N',
-    "\xc5\x84"=>'n', "\xc5\x85"=>'N',
-    "\xc5\x86"=>'n', "\xc5\x87"=>'N',
-    "\xc5\x88"=>'n', "\xc5\x89"=>'N',
-    "\xc5\x8a"=>'n', "\xc5\x8b"=>'N',
-    "\xc5\x8c"=>'O', "\xc5\x8d"=>'o',
-    "\xc5\x8e"=>'O', "\xc5\x8f"=>'o',
-    "\xc5\x90"=>'O', "\xc5\x91"=>'o',
-    "\xc5\x92"=>'OE', "\xc5\x93"=>'oe',
-    "\xc5\x94"=>'R', "\xc5\x95"=>'r',
-    "\xc5\x96"=>'R', "\xc5\x97"=>'r',
-    "\xc5\x98"=>'R', "\xc5\x99"=>'r',
-    "\xc5\x9a"=>'S', "\xc5\x9b"=>'s',
-    "\xc5\x9c"=>'S', "\xc5\x9d"=>'s',
-    "\xc5\x9e"=>'S', "\xc5\x9f"=>'s',
-    "\xc5\xa0"=>'S', "\xc5\xa1"=>'s',
-    "\xc5\xa2"=>'T', "\xc5\xa3"=>'t',
-    "\xc5\xa4"=>'T', "\xc5\xa5"=>'t',
-    "\xc5\xa6"=>'T', "\xc5\xa7"=>'t',
-    "\xc5\xa8"=>'U', "\xc5\xa9"=>'u',
-    "\xc5\xaa"=>'U', "\xc5\xab"=>'u',
-    "\xc5\xac"=>'U', "\xc5\xad"=>'u',
-    "\xc5\xae"=>'U', "\xc5\xaf"=>'u',
-    "\xc5\xb0"=>'U', "\xc5\xb1"=>'u',
-    "\xc5\xb2"=>'U', "\xc5\xb3"=>'u',
-    "\xc5\xb4"=>'W', "\xc5\xb5"=>'w',
-    "\xc5\xb6"=>'Y', "\xc5\xb7"=>'y',
-    "\xc5\xb8"=>'Y', "\xc5\xb9"=>'Z',
-    "\xc5\xba"=>'z', "\xc5\xbb"=>'Z',
-    "\xc5\xbc"=>'z', "\xc5\xbd"=>'Z',
-    "\xc5\xbe"=>'z', "\xc5\xbf"=>'s',
-    // Decompositions for Latin Extended-B
-    "\xc8\x98"=>'S', "\xc8\x99"=>'s',
-    "\xc8\x9a"=>'T', "\xc8\x9b"=>'t',
-    // Euro Sign
-    "\xe2\x82\xac"=>'E',
-    // GBP (Pound) Sign
-    "\xc2\xa3"=>'');
-
-    $string = strtr($string, $chars);
-  }
-  else
-  {
-    // Assume ISO-8859-1 if not UTF-8
-    $chars['in'] = chr(128).chr(131).chr(138).chr(142).chr(154).chr(158)
-      .chr(159).chr(162).chr(165).chr(181).chr(192).chr(193).chr(194)
-      .chr(195).chr(196).chr(197).chr(199).chr(200).chr(201).chr(202)
-      .chr(203).chr(204).chr(205).chr(206).chr(207).chr(209).chr(210)
-      .chr(211).chr(212).chr(213).chr(214).chr(216).chr(217).chr(218)
-      .chr(219).chr(220).chr(221).chr(224).chr(225).chr(226).chr(227)
-      .chr(228).chr(229).chr(231).chr(232).chr(233).chr(234).chr(235)
-      .chr(236).chr(237).chr(238).chr(239).chr(241).chr(242).chr(243)
-      .chr(244).chr(245).chr(246).chr(248).chr(249).chr(250).chr(251)
-      .chr(252).chr(253).chr(255);
-
-    $chars['out'] = "EfSZszYcYuAAAAAACEEEEIIIINOOOOOOUUUUYaaaaaaceeeeiiiinoooooouuuuyy";
-
-    $string = strtr($string, $chars['in'], $chars['out']);
-    $double_chars['in'] = array(chr(140), chr(156), chr(198), chr(208), chr(222), chr(223), chr(230), chr(240), chr(254));
-    $double_chars['out'] = array('OE', 'oe', 'AE', 'DH', 'TH', 'ss', 'ae', 'dh', 'th');
-    $string = str_replace($double_chars['in'], $double_chars['out'], $string);
-  }
-
-  return $string;
-}
-
-if (function_exists('mb_strtolower') && defined('PWG_CHARSET'))
-{
-  /**
-   * removes accents from a string and converts it to lower case
-   *
-   * @param string $term
-   * @return string
-   */
-  function transliterate($term)
-  {
-    return remove_accents(mb_strtolower($term, PWG_CHARSET));
-  }
-}
-else
-{
-  /**
-   * @ignore
-   */
-  function transliterate($term)
-  {
-    return remove_accents(strtolower($term));
-  }
-}
-
-/**
- * simplify a string to insert it into an URL
- *
- * @param string $str
- * @return string
- */
-function str2url($str)
-{
-  $str = $safe = transliterate($str);
-  $str = preg_replace('/[^\x80-\xffa-z0-9_\s\'\:\/\[\],-]/','',$str);
-  $str = preg_replace('/[\s\'\:\/\[\],-]+/',' ',trim($str));
-  $res = str_replace(' ','_',$str);
-
-  if (empty($res))
-  {
-    $res = str_replace(' ','_', $safe);
-  }
-
-  return $res;
-}
 
 /**
  * returns an array with a list of {language_code => language_name}
@@ -360,23 +94,19 @@ function str2url($str)
  */
 function get_languages()
 {
-  $query = '
-SELECT id, name
-  FROM '.LANGUAGES_TABLE.'
-  ORDER BY name ASC
-;';
-  $result = pwg_query($query);
+    $query = 'SELECT id, name FROM ' . LANGUAGES_TABLE . ' ORDER BY name ASC;';
+    $result = pwg_query($query);
 
-  $languages = array();
-  while ($row = pwg_db_fetch_assoc($result))
-  {
-    if (is_dir(PHPWG_ROOT_PATH.'language/'.$row['id']))
+    $languages = array();
+    while ($row = pwg_db_fetch_assoc($result))
     {
-      $languages[ $row['id'] ] = $row['name'];
+        if (is_dir(PHPWG_ROOT_PATH.'language/'.$row['id']))
+        {
+            $languages[$row['id']] = $row['name'];
+        }
     }
-  }
 
-  return $languages;
+    return $languages;
 }
 
 /**
@@ -388,30 +118,32 @@ SELECT id, name
  */
 function pwg_log($image_id = null, $image_type = null)
 {
-  global $conf, $user, $page;
+    global $conf, $user, $page;
 
-  $do_log = $conf['log'];
-  if (is_admin())
-  {
-    $do_log = $conf['history_admin'];
-  }
-  if (is_a_guest())
-  {
-    $do_log = $conf['history_guest'];
-  }
+    $do_log = $conf['log'];
+    if (is_admin())
+    {
+        $do_log = $conf['history_admin'];
+    }
+  
+    if (is_a_guest())
+    {
+        $do_log = $conf['history_guest'];
+    }
 
-  $do_log = trigger_change('pwg_log_allowed', $do_log, $image_id, $image_type);
+    $do_log = trigger_change('pwg_log_allowed', $do_log, $image_id, $image_type);
 
-  if (!$do_log)
-  {
-    return false;
-  }
+    if (!$do_log)
+    {
+        return false;
+    }
 
-  $tags_string = null;
-  if ('tags'==@$page['section'])
-  {
-    $tags_string = implode(',', $page['tag_ids']);
-  }
+    $tags_string = null;
+  
+    if ('tags'==@$page['section'])
+    {
+        $tags_string = implode(',', $page['tag_ids']);
+    }
 
   $query = '
 INSERT INTO '.HISTORY_TABLE.'
@@ -439,307 +171,10 @@ INSERT INTO '.HISTORY_TABLE.'
     '.(isset($tags_string) ? "'".$tags_string."'" : 'NULL').'
   )
 ;';
-  pwg_query($query);
+  
+    pwg_query($query);
 
-  return true;
-}
-
-/**
- * Computes the difference between two dates.
- * returns a DateInterval object or a stdClass with the same attributes
- * http://stephenharris.info/date-intervals-in-php-5-2
- *
- * @param DateTime $date1
- * @param DateTime $date2
- * @return DateInterval|stdClass
- */
-function dateDiff($date1, $date2)
-{
-  if (version_compare(PHP_VERSION, '5.3.0') >= 0)
-  {
-    return $date1->diff($date2);
-  }
-
-  $diff = new stdClass();
-
-  //Make sure $date1 is ealier
-  $diff->invert = $date2 < $date1;
-  if ($diff->invert)
-  {
-    list($date1, $date2) = array($date2, $date1);
-  }
-
-  //Calculate R values
-  $R = ($date1 <= $date2 ? '+' : '-');
-  $r = ($date1 <= $date2 ? '' : '-');
-
-  //Calculate total days
-  $diff->days = round(abs($date1->format('U') - $date2->format('U'))/86400);
-
-  //A leap year work around - consistent with DateInterval
-  $leap_year = $date1->format('m-d') == '02-29';
-  if ($leap_year)
-  {
-    $date1->modify('-1 day');
-  }
-
-  //Years, months, days, hours
-  $periods = array('years'=>-1, 'months'=>-1, 'days'=>-1, 'hours'=>-1);
-
-  foreach ($periods as $period => &$i)
-  {
-    if ($period == 'days' && $leap_year)
-    {
-      $date1->modify('+1 day');
-    }
-
-    while ($date1 <= $date2 )
-    {
-      $date1->modify('+1 '.$period);
-      $i++;
-    }
-
-    //Reset date and record increments
-    $date1->modify('-1 '.$period);
-  }
-
-  list($diff->y, $diff->m, $diff->d, $diff->h) = array_values($periods);
-
-  //Minutes, seconds
-  $diff->s = round(abs($date1->format('U') - $date2->format('U')));
-  $diff->i = floor($diff->s/60);
-  $diff->s = $diff->s - $diff->i*60;
-
-  return $diff;
-}
-
-/**
- * converts a string into a DateTime object
- *
- * @param int|string timestamp or datetime string
- * @param string $format input format respecting date() syntax
- * @return DateTime|false
- */
-function str2DateTime($original, $format=null)
-{
-  if (empty($original))
-  {
-    return false;
-  }
-
-  if ($original instanceof DateTime)
-  {
-    return $original;
-  }
-
-  if (!empty($format) && version_compare(PHP_VERSION, '5.3.0') >= 0)// from known date format
-  {
-    return DateTime::createFromFormat('!'.$format, $original); // ! char to reset fields to UNIX epoch
-  }
-  else
-  {
-    $t = trim($original, '0123456789');
-    if (empty($t)) // from timestamp
-    {
-      return new DateTime('@'.$original);
-    }
-    else // from unknown date format (assuming something like Y-m-d H:i:s)
-    {
-      $ymdhms = array();
-      $tok = strtok($original, '- :/');
-      while ($tok !== false)
-      {
-        $ymdhms[] = $tok;
-        $tok = strtok('- :/');
-      }
-
-      if (count($ymdhms)<3) return false;
-      if (!isset($ymdhms[3])) $ymdhms[3] = 0;
-      if (!isset($ymdhms[4])) $ymdhms[4] = 0;
-      if (!isset($ymdhms[5])) $ymdhms[5] = 0;
-
-      $date = new DateTime();
-      $date->setDate($ymdhms[0], $ymdhms[1], $ymdhms[2]);
-      $date->setTime($ymdhms[3], $ymdhms[4], $ymdhms[5]);
-      return $date;
-    }
-  }
-}
-
-/**
- * returns a formatted and localized date for display
- *
- * @param int|string timestamp or datetime string
- * @param array $show list of components displayed, default is ['day_name', 'day', 'month', 'year']
- *    THIS PARAMETER IS PLANNED TO CHANGE
- * @param string $format input format respecting date() syntax
- * @return string
- */
-function format_date($original, $show=null, $format=null)
-{
-  global $lang;
-
-  $date = str2DateTime($original, $format);
-
-  if (!$date)
-  {
-    return l10n('N/A');
-  }
-
-  if ($show === null || $show === true)
-  {
-    $show = array('day_name', 'day', 'month', 'year');
-  }
-
-  // TODO use IntlDateFormatter for proper i18n
-
-  $print = '';
-  if (in_array('day_name', $show))
-    $print.= $lang['day'][ $date->format('w') ].' ';
-
-  if (in_array('day', $show))
-    $print.= $date->format('j').' ';
-
-  if (in_array('month', $show))
-    $print.= $lang['month'][ $date->format('n') ].' ';
-
-  if (in_array('year', $show))
-    $print.= $date->format('Y').' ';
-
-  if (in_array('time', $show))
-  {
-    $temp = $date->format('H:i');
-    if ($temp != '00:00')
-    {
-      $print.= $temp.' ';
-    }
-  }
-
-  return trim($print);
-}
-
-/**
- * Format a "From ... to ..." string from two dates
- * @param string $from
- * @param string $to
- * @param boolean $full
- * @return string
- */
-function format_fromto($from, $to, $full=false)
-{
-  $from = str2DateTime($from);
-  $to = str2DateTime($to);
-
-  if ($from->format('Y-m-d') == $to->format('Y-m-d'))
-  {
-    return format_date($from);
-  }
-  else
-  {
-    if ($full || $from->format('Y') != $to->format('Y'))
-    {
-      $from_str = format_date($from);
-    }
-    else if ($from->format('m') != $to->format('m'))
-    {
-      $from_str = format_date($from, array('day_name', 'day', 'month'));
-    }
-    else
-    {
-      $from_str = format_date($from, array('day_name', 'day'));
-    }
-    $to_str = format_date($to);
-
-    return l10n('from %s to %s', $from_str, $to_str);
-  }
-}
-
-/**
- * Works out the time since the given date
- *
- * @param int|string timestamp or datetime string
- * @param string $stop year,month,week,day,hour,minute,second
- * @param string $format input format respecting date() syntax
- * @param bool $with_text append "ago" or "in the future"
- * @param bool $with_weeks
- * @return string
- */
-function time_since($original, $stop='minute', $format=null, $with_text=true, $with_week=true)
-{
-  $date = str2DateTime($original, $format);
-
-  if (!$date)
-  {
-    return l10n('N/A');
-  }
-
-  $now = new DateTime();
-  $diff = dateDiff($now, $date);
-
-  $chunks = array(
-    'year' => $diff->y,
-    'month' => $diff->m,
-    'week' => 0,
-    'day' => $diff->d,
-    'hour' => $diff->h,
-    'minute' => $diff->i,
-    'second' => $diff->s,
-  );
-
-  // DateInterval does not contain the number of weeks
-  if ($with_week)
-  {
-    $chunks['week'] = (int)floor($chunks['day']/7);
-    $chunks['day'] = $chunks['day'] - $chunks['week']*7;
-  }
-
-  $j = array_search($stop, array_keys($chunks));
-
-  $print = ''; $i=0;
-  foreach ($chunks as $name => $value)
-  {
-    if ($value != 0)
-    {
-      $print.= ' '.l10n_dec('%d '.$name, '%d '.$name.'s', $value);
-    }
-    if (!empty($print) && $i >= $j)
-    {
-      break;
-    }
-    $i++;
-  }
-
-  $print = trim($print);
-
-  if ($with_text)
-  {
-    if ($diff->invert)
-    {
-      $print = l10n('%s ago', $print);
-    }
-    else
-    {
-      $print = l10n('%s in the future', $print);
-    }
-  }
-
-  return $print;
-}
-
-/**
- * transform a date string from a format to another (MySQL to d/M/Y for instance)
- *
- * @param string $original
- * @param string $format_in respecting date() syntax
- * @param string $format_out respecting date() syntax
- * @param string $default if _$original_ is empty
- * @return string
- */
-function transform_date($original, $format_in, $format_out, $default=null)
-{
-  if (empty($original)) return $default;
-  $date = str2DateTime($original, $format_in);
-  return $date->format($format_out);
+    return true;
 }
 
 /**
@@ -925,10 +360,11 @@ function check_theme_installed($theme_id)
  */
 function original_to_representative($path, $representative_ext)
 {
-  $pos = strrpos($path, '/');
-  $path = substr_replace($path, 'pwg_representative/', $pos+1, 0);
-  $pos = strrpos($path, '.');
-  return substr_replace($path, $representative_ext, $pos+1);
+    $pos  = strrpos($path, '/');
+    $path = substr_replace($path, 'pwg_representative/', $pos + 1, 0);
+    $pos  = strrpos($path, '.');
+  
+    return substr_replace($path, $representative_ext, $pos + 1);
 }
 
 /**
@@ -939,12 +375,14 @@ function original_to_representative($path, $representative_ext)
  */
 function get_element_path($element_info)
 {
-  $path = $element_info['path'];
-  if (!url_is_remote($path))
-  {
-    $path = PHPWG_ROOT_PATH.$path;
-  }
-  return $path;
+    $path = $element_info['path'];
+  
+    if (!url_is_remote($path))
+    {
+        $path = PHPWG_ROOT_PATH.$path;
+    }
+  
+    return $path;
 }
 
 
@@ -1192,7 +630,7 @@ SELECT param, value
  * @param string $value
  * @param boolean $updateGlobal update global *$conf* variable
  * @param callable $parser function to apply to the value before save in database
-      (eg: serialize, json_encode) will not be applied to *$conf* if *$parser* is *true*
+ *    (eg: serialize, json_encode) will not be applied to *$conf* if *$parser* is *true*
  */
 function conf_update_param($param, $value, $updateGlobal=false, $parser=null)
 {
@@ -1432,7 +870,7 @@ function get_pwg_charset()
  * @param string $lang_id
  * @return string|null
  */
-function get_parent_language($lang_id=null)
+function get_parent_language($lang_id = null)
 {
   if (empty($lang_id))
   {
@@ -2070,5 +1508,3 @@ function safe_version_compare($a, $b, $op=null)
     return version_compare($a, $b, $op);
   }
 }
-
-?>

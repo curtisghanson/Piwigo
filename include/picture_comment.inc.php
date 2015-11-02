@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 
+use Piwigo\Utils\DateTimeUtils;
+
 /**
  * This file is included by the picture page to manage user comments
  *
@@ -143,77 +145,81 @@ SELECT
 
     while ($row = pwg_db_fetch_assoc($result))
     {
-      if ($row['author'] == 'guest')
-      {
-        $row['author'] = l10n('guest');
-      }
+        if ($row['author'] == 'guest')
+        {
+            $row['author'] = l10n('guest');
+        }
 
-      $email = null;
-      if (!empty($row['user_email']))
-      {
-        $email = $row['user_email'];
-      }
-      elseif (!empty($row['email']))
-      {
-        $email = $row['email'];
-      }
+        $email = null;
+      
+        if (!empty($row['user_email']))
+        {
+            $email = $row['user_email'];
+        }
+        else if (!empty($row['email']))
+        {
+            $email = $row['email'];
+        }
 
-      $tpl_comment =
-        array(
-          'ID' => $row['id'],
-          'AUTHOR' => trigger_change('render_comment_author', $row['author']),
-          'DATE' => format_date($row['date'], array('day_name','day','month','year','time')),
-          'CONTENT' => trigger_change('render_comment_content',$row['content']),
-          'WEBSITE_URL' => $row['website_url'],
+        $tpl_comment = array(
+            'ID'          => $row['id'],
+            'AUTHOR'      => trigger_change('render_comment_author', $row['author']),
+            'DATE'        => DateTimeUtils::formatDate($row['date'], array('day_name','day','month','year','time')),
+            'CONTENT'     => trigger_change('render_comment_content',$row['content']),
+            'WEBSITE_URL' => $row['website_url'],
         );
 
-      if (can_manage_comment('delete', $row['author_id']))
-      {
-        $tpl_comment['U_DELETE'] = add_url_params(
-          $url_self,
-          array(
-            'action'=>'delete_comment',
-            'comment_to_delete'=>$row['id'],
-            'pwg_token' => get_pwg_token(),
-            )
-          );
-      }
-      if (can_manage_comment('edit', $row['author_id']))
-      {
-        $tpl_comment['U_EDIT'] = add_url_params(
-          $url_self,
-          array(
-            'action'=>'edit_comment',
-            'comment_to_edit'=>$row['id'],
-            )
-          );
-          if (isset($edit_comment) and ($row['id'] == $edit_comment))
-          {
-            $tpl_comment['IN_EDIT'] = true;
-            $key = get_ephemeral_key(2, $page['image_id']);
-            $tpl_comment['KEY'] = $key;
-            $tpl_comment['CONTENT'] = $row['content'];
-            $tpl_comment['PWG_TOKEN'] = get_pwg_token();
-            $tpl_comment['U_CANCEL'] = $url_self;
-          }
-      }
-      if (is_admin())
-      {
-        $tpl_comment['EMAIL'] = $email;
-
-        if ($row['validated'] != 'true')
+        if (can_manage_comment('delete', $row['author_id']))
         {
-          $tpl_comment['U_VALIDATE'] = add_url_params(
-                  $url_self,
-                  array(
-                    'action' => 'validate_comment',
-                    'comment_to_validate' => $row['id'],
-                    'pwg_token' => get_pwg_token(),
-                    )
-                  );
+            $tpl_comment['U_DELETE'] = add_url_params(
+                $url_self,
+                array(
+                    'action'            => 'delete_comment',
+                    'comment_to_delete' => $row['id'],
+                    'pwg_token'         => get_pwg_token(),
+                )
+            );
         }
-      }
-      $template->append('comments', $tpl_comment);
+      
+        if (can_manage_comment('edit', $row['author_id']))
+        {
+            $tpl_comment['U_EDIT'] = add_url_params(
+                $url_self,
+                array(
+                    'action'          => 'edit_comment',
+                    'comment_to_edit' => $row['id'],
+                )
+            );
+          
+            if (isset($edit_comment) and ($row['id'] == $edit_comment))
+            {
+                $tpl_comment['IN_EDIT'] = true;
+                $key = get_ephemeral_key(2, $page['image_id']);
+                $tpl_comment['KEY'] = $key;
+                $tpl_comment['CONTENT'] = $row['content'];
+                $tpl_comment['PWG_TOKEN'] = get_pwg_token();
+                $tpl_comment['U_CANCEL'] = $url_self;
+            }
+        }
+      
+        if (is_admin())
+        {
+            $tpl_comment['EMAIL'] = $email;
+
+            if ($row['validated'] != 'true')
+            {
+                $tpl_comment['U_VALIDATE'] = add_url_params(
+                    $url_self,
+                    array(
+                        'action'              => 'validate_comment',
+                        'comment_to_validate' => $row['id'],
+                        'pwg_token'           => get_pwg_token(),
+                    )
+                );
+            }
+        }
+      
+        $template->append('comments', $tpl_comment);
     }
   }
 
@@ -255,5 +261,3 @@ SELECT
     $template->assign('comment_add', $tpl_var);
   }
 }
-
-?>

@@ -1,25 +1,7 @@
 <?php
-// +-----------------------------------------------------------------------+
-// | Piwigo - a PHP based photo gallery                                    |
-// +-----------------------------------------------------------------------+
-// | Copyright(C) 2008-2014 Piwigo Team                  http://piwigo.org |
-// | Copyright(C) 2003-2008 PhpWebGallery Team    http://phpwebgallery.net |
-// | Copyright(C) 2002-2003 Pierrick LE GALL   http://le-gall.net/pierrick |
-// +-----------------------------------------------------------------------+
-// | This program is free software; you can redistribute it and/or modify  |
-// | it under the terms of the GNU General Public License as published by  |
-// | the Free Software Foundation                                          |
-// |                                                                       |
-// | This program is distributed in the hope that it will be useful, but   |
-// | WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |
-// | General Public License for more details.                              |
-// |                                                                       |
-// | You should have received a copy of the GNU General Public License     |
-// | along with this program; if not, write to the Free Software           |
-// | Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, |
-// | USA.                                                                  |
-// +-----------------------------------------------------------------------+
+require_once __DIR__ . '/../../vendor/autoload.php';
+
+use Piwigo\Utils\DateTimeUtils;
 
 /**
  * API method
@@ -196,7 +178,7 @@ SELECT user_id, group_id
     {
       foreach ($users as $cur_user)
       {
-        $users[$cur_user['id']]['registration_date_string'] = format_date($cur_user['registration_date'], array('day', 'month', 'year'));
+        $users[$cur_user['id']]['registration_date_string'] = DateTimeUtils::formatDate($cur_user['registration_date'], array('day', 'month', 'year'));
       }
     }
 
@@ -204,7 +186,7 @@ SELECT user_id, group_id
     {
       foreach ($users as $cur_user)
       {
-        $users[ $cur_user['id'] ]['registration_date_since'] = time_since($cur_user['registration_date'], 'month');
+        $users[ $cur_user['id'] ]['registration_date_since'] = DateTimeUtils::timeSince($cur_user['registration_date'], 'month');
       }
     }
 
@@ -240,12 +222,12 @@ SELECT
         
         if (isset($params['display']['last_visit_string']))
         {
-          $users[ $row['user_id'] ]['last_visit_string'] = format_date($last_visit, array('day', 'month', 'year'));
+          $users[ $row['user_id'] ]['last_visit_string'] = DateTimeUtils::formatDate($last_visit, array('day', 'month', 'year'));
         }
         
         if (isset($params['display']['last_visit_since']))
         {
-          $users[ $row['user_id'] ]['last_visit_since'] = time_since($last_visit, 'day');
+          $users[ $row['user_id'] ]['last_visit_since'] = DateTimeUtils::timeSince($last_visit, 'day');
         }
       }
     }

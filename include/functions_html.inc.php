@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Piwigo\Model\RegisteredBlock;
+use Piwigo\Utils\StringUtils;
 
 include_once(PHPWG_ROOT_PATH.'include/functions.inc.php');
 include_once(PHPWG_ROOT_PATH.'include/functions_url.inc.php');
@@ -231,7 +232,7 @@ function tag_alpha_compare($a, $b)
   {
     if (!isset($cache[__FUNCTION__][ $tag['name'] ]))
     {
-      $cache[__FUNCTION__][ $tag['name'] ] = transliterate($tag['name']);
+      $cache[__FUNCTION__][ $tag['name'] ] = StringUtils::transliterate($tag['name']);
     }
   }
 

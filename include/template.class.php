@@ -4,6 +4,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use CssMin\CssMin;
 use Piwigo\Asset\JShrinkMinifier;
 use Piwigo\Derivative\DerivativeImage;
+use Piwigo\Utils\DateTimeUtils;
 
 /**
  * @package template
@@ -564,7 +565,7 @@ class Template
       global $t2;
       $this->smarty->assign(
         array(
-        'AAAA_DEBUG_TOTAL_TIME__' => get_elapsed_time($t2, get_moment())
+        'AAAA_DEBUG_TOTAL_TIME__' => DateTimeUtils::getElapsedTime($t2, DateTimeUtils::getMoment())
         )
         );
       Smarty_Internal_Debug::display_debug($this->smarty);
@@ -2024,13 +2025,11 @@ final class FileCombiner
     {
         $css = self::process_css_rec($css, dirname($file), $header);
 
-        var_dump($css);
-        if (strpos($file, '.min') === false and version_compare(PHP_VERSION, '5.2.4', '>='))
-        {
-            $css = CssMin::minify($css, array('Variables'=>false));
-        }
-        var_dump($css);
-        exit;
+        //if (strpos($file, '.min') === false and version_compare(PHP_VERSION, '5.2.4', '>='))
+        //{
+            //$css = CssMin::minify($css, array('Variables'=>false));
+        //}
+
         $css = trigger_change('combined_css_postfilter', $css);
 
         return $css;

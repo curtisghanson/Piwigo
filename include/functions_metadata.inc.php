@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 
+use Piwigo\Utils\StringUtils;
+
 /**
  * @package functions\metadata
  */
@@ -85,7 +87,7 @@ function clean_iptc_value($value)
     // apparently mac uses some MacRoman crap encoding. I don't know
     // how to detect it so a plugin should do the trick.
     $value = trigger_change('clean_iptc_value', $value);
-    if ( ($qual = qualify_utf8($value)) != 0)
+    if ( ($qual = StringUtils::qualifyUtf8($value)) != 0)
     {// has non ascii chars
       if ($qual>0)
       {

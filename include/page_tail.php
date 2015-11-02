@@ -1,5 +1,8 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
+
+use Piwigo\Utils\DateTimeUtils;
+
 $template->set_filenames(array('tail'=>'footer.tpl'));
 
 trigger_notify('loc_begin_page_tail');
@@ -34,7 +37,7 @@ if ($conf['show_gt'])
     $page['count_queries'] = 0;
     $page['queries_time'] = 0;
   }
-  $time = get_elapsed_time($t2, get_moment());
+  $time = DateTimeUtils::getElapsedTime($t2, DateTimeUtils::getMoment());
 
   $debug_vars = array_merge($debug_vars,
     array('TIME' => $time,

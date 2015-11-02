@@ -1,7 +1,8 @@
 <?php
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 use Piwigo\Feed\UniversalFeedCreator;
+use Piwigo\Utils\DateTimeUtils;
 
 define('PHPWG_ROOT_PATH','./');
 include_once(PHPWG_ROOT_PATH.'include/common.inc.php');
@@ -101,9 +102,9 @@ if (!$image_only)
 
   if (count($news) > 0)
   {
-    $item = new FeedItem();
-    $item->title = l10n('New on %s', format_date($dbnow) );
-    $item->link = get_gallery_home_url();
+    $item        = new FeedItem();
+    $item->title = l10n('New on %s', DateTimeUtils::formatDate($dbnow) );
+    $item->link  = get_gallery_home_url();
 
     // content creation
     $item->description = '<ul>';

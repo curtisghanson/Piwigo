@@ -3,6 +3,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use Piwigo\Derivative\SrcImage;
 use Piwigo\Derivative\ImageStdParams;
+use Piwigo\Utils\DateTimeUtils;
 
 /**
  * This file is included by the main page to show subcategories of a category
@@ -312,16 +313,16 @@ if (count($categories) > 0)
 
     if ($conf['display_fromto'])
     {
-      if (isset($dates_of_category[ $category['id'] ]))
-      {
-        $from = $dates_of_category[ $category['id'] ]['from'];
-        $to   = $dates_of_category[ $category['id'] ]['to'];
-
-        if (!empty($from))
+        if (isset($dates_of_category[ $category['id'] ]))
         {
-          $tpl_var['INFO_DATES'] = format_fromto($from, $to);
+            $from = $dates_of_category[ $category['id'] ]['from'];
+            $to   = $dates_of_category[ $category['id'] ]['to'];
+
+            if (!empty($from))
+            {
+                $tpl_var['INFO_DATES'] = DateTimeUtils::formatFromTo($from, $to);
+            }
         }
-      }
     }
 
     $tpl_thumbnails_var[] = $tpl_var;

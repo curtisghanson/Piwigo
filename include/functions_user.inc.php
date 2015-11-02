@@ -7,6 +7,7 @@ include_once(PHPWG_ROOT_PATH.'/include/functions_plugins.inc.php');
 use Piwigo\Http\Message;
 use Piwigo\Security\PasswordHash;
 use Piwigo\Security\Authorization;
+use Piwigo\Entity\User;
 
 /**
  * @package functions\user
@@ -1250,6 +1251,7 @@ function get_access_type_status($user_status='')
  * @param string $user_status used if $user not initialized
  * @return bool
  */
+
 function is_autorize_status($access_type, $user_status='')
 {
   return (get_access_type_status($user_status) >= $access_type);

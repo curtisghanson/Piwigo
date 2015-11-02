@@ -1,17 +1,12 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
-
-use Piwigo\Security\Authorization;
-
-if (!defined('PHPWG_ROOT_PATH'))
-{
-  die ("Hacking attempt!");
-}
-
 include_once(PHPWG_ROOT_PATH.'admin/include/functions.php');
 include_once(PHPWG_ROOT_PATH.'admin/include/check_integrity.class.php');
 include_once(PHPWG_ROOT_PATH.'admin/include/c13y_internal.class.php');
 include_once(PHPWG_ROOT_PATH.'admin/include/image.class.php');
+
+use Piwigo\Security\Authorization;
+use Piwigo\Utils\DateTimeUtils;
 
 // +-----------------------------------------------------------------------+
 // | Check Access and exit when user status is not ok                      |
@@ -209,7 +204,7 @@ SELECT MIN(date_available)
     'first_added',
     array(
       'DB_DATE' =>
-      l10n('first photo added on %s', format_date($first_date))
+      l10n('first photo added on %s', DateTimeUtils::formatDate($first_date))
       )
     );
 }

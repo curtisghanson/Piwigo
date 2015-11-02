@@ -1,28 +1,9 @@
 <?php
-// +-----------------------------------------------------------------------+
-// | Piwigo - a PHP based photo gallery                                    |
-// +-----------------------------------------------------------------------+
-// | Copyright(C) 2008-2014 Piwigo Team                  http://piwigo.org |
-// | Copyright(C) 2003-2008 PhpWebGallery Team    http://phpwebgallery.net |
-// | Copyright(C) 2002-2003 Pierrick LE GALL   http://le-gall.net/pierrick |
-// +-----------------------------------------------------------------------+
-// | This program is free software; you can redistribute it and/or modify  |
-// | it under the terms of the GNU General Public License as published by  |
-// | the Free Software Foundation                                          |
-// |                                                                       |
-// | This program is distributed in the hope that it will be useful, but   |
-// | WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |
-// | General Public License for more details.                              |
-// |                                                                       |
-// | You should have received a copy of the GNU General Public License     |
-// | along with this program; if not, write to the Free Software           |
-// | Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, |
-// | USA.                                                                  |
-// +-----------------------------------------------------------------------+
-
+require_once __DIR__ . '/../../vendor/autoload.php';
 include_once(PHPWG_ROOT_PATH.'admin/include/functions.php');
 include_once(PHPWG_ROOT_PATH.'admin/include/image.class.php');
+
+use Piwigo\Utils\FileUtils;
 
 // add default event handler for image and thumbnail resize
 add_event_handler('upload_image_resize', 'pwg_image_resize');
@@ -30,42 +11,39 @@ add_event_handler('upload_thumbnail_resize', 'pwg_image_resize');
 
 function get_upload_form_config()
 {
-  // default configuration for upload
-  $upload_form_config = array(
-    'original_resize' => array(
-      'default' => false,
-      'can_be_null' => false,
-      ),
-
-    'original_resize_maxwidth' => array(
-      'default' => 2000,
-      'min' => 500,
-      'max' => 20000,
-      'pattern' => '/^\d+$/',
-      'can_be_null' => false,
-      'error_message' => l10n('The original maximum width must be a number between %d and %d'),
-      ),
-
-    'original_resize_maxheight' => array(
-      'default' => 2000,
-      'min' => 300,
-      'max' => 20000,
-      'pattern' => '/^\d+$/',
-      'can_be_null' => false,
-      'error_message' => l10n('The original maximum height must be a number between %d and %d'),
-      ),
-
-    'original_resize_quality' => array(
-      'default' => 95,
-      'min' => 50,
-      'max' => 98,
-      'pattern' => '/^\d+$/',
-      'can_be_null' => false,
-      'error_message' => l10n('The original image quality must be a number between %d and %d'),
-      ),
+    // default configuration for upload
+    $upload_form_config = array(
+        'original_resize' => array(
+            'default'     => false,
+            'can_be_null' => false,
+        ),
+        'original_resize_maxwidth' => array(
+            'default'       => 2000,
+            'min'           => 500,
+            'max'           => 20000,
+            'pattern'       => '/^\d+$/',
+            'can_be_null'   => false,
+            'error_message' => l10n('The original maximum width must be a number between %d and %d'),
+        ),
+        'original_resize_maxheight' => array(
+            'default'       => 2000,
+            'min'           => 300,
+            'max'           => 20000,
+            'pattern'       => '/^\d+$/',
+            'can_be_null'   => false,
+            'error_message' => l10n('The original maximum height must be a number between %d and %d'),
+        ),
+        'original_resize_quality' => array(
+            'default'       => 95,
+            'min'           => 50,
+            'max'           => 98,
+            'pattern'       => '/^\d+$/',
+            'can_be_null'   => false,
+            'error_message' => l10n('The original image quality must be a number between %d and %d'),
+        ),
     );
 
-  return $upload_form_config;
+    return $upload_form_config;
 }
 
 function save_upload_form_config($data, &$errors=array(), &$form_errors=array())
@@ -239,7 +217,7 @@ SELECT
     }
     elseif (isset($conf['upload_form_all_types']) and $conf['upload_form_all_types'])
     {
-      $original_extension = strtolower(get_extension($original_filename));
+      $original_extension = strtolower(FileUtils::getExtension($original_filename));
 
       if (in_array($original_extension, $conf['file_ext']))
       {

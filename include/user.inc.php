@@ -45,12 +45,10 @@ if ($conf['apache_authentication'])
   }
 }
 
-$user = build_user( $user['id'],
-          ( defined('IN_ADMIN') and IN_ADMIN ) ? false : true // use cache ?
-         );
+$user = build_user($user['id'], (defined('IN_ADMIN') and IN_ADMIN) ? false : true); // use cache ?
+
 if ($conf['browser_language'] and (is_a_guest() or is_generic()) )
 {
   get_browser_language($user['language']);
 }
 trigger_notify('user_init', $user);
-?>

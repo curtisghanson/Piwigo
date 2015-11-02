@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Piwigo\Http\Message;
+use Piwigo\Utils\StringUtils;
 
 /**
  * returns a prefix for each url link on displayed page
@@ -215,7 +216,7 @@ function make_picture_url($params)
       $url .= $params['image_id'];
       if ( isset($params['image_file']) )
       {
-        $url .= '-'.str2url(get_filename_wo_extension($params['image_file']));
+        $url .= '-' . StringUtils::str2url(get_filename_wo_extension($params['image_file']));
       }
       break;
     case 'file':
@@ -332,7 +333,7 @@ function make_section_in_url($params)
           $section_string.= $params['category']['id'];
           if ( $conf['category_url_style']=='id-name' )
           {
-            $section_string.= '-'.str2url($params['category']['name']);
+            $section_string.= '-' . StringUtils::str2url($params['category']['name']);
           }
         }
         else

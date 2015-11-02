@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 
+use Piwigo\Utils\StringUtils;
+
 /**
  * This included page checks section related parameter and provides
  * following informations:
@@ -590,7 +592,7 @@ if ( 'categories'==$page['section'] and isset($page['category']) )
   if ( empty($page['category']['permalink']) )
   {
     if ( $conf['category_url_style'] == 'id-name' and
-        @$page['hit_by']['cat_url_name'] !== str2url($page['category']['name']) )
+        @$page['hit_by']['cat_url_name'] !== StringUtils::str2url($page['category']['name']) )
     {
       $need_redirect=true;
     }

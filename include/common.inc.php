@@ -1,13 +1,21 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 
+defined('PHPWG_ROOT_PATH') or trigger_error('Hacking attempt!', E_USER_ERROR);
+
+use Piwigo\Application;
+use Symfony\Component\Config\FileLocator;
+use Piwigo\DependencyInjection\Configuration;
+
 use Piwigo\Cache\PersistentFileCache;
 use Piwigo\Derivative\ImageStdParams;
 
-defined('PHPWG_ROOT_PATH') or trigger_error('Hacking attempt!', E_USER_ERROR);
+$app = new Application();
 
 // determine the initial instant to indicate the generation time of this page
-$t2 = microtime(true);
+$app['t2'] = function() {
+    return microtime(true);
+};
 
 @set_magic_quotes_runtime(0); // Disable magic_quotes_runtime
 
@@ -17,75 +25,106 @@ $t2 = microtime(true);
 //
 if( !@get_magic_quotes_gpc() )
 {
-  function sanitize_mysql_kv(&$v, $k)
-  {
-    $v = addslashes($v);
-  }
-  if(is_array($_GET))
-  {
-    array_walk_recursive($_GET, 'sanitize_mysql_kv');
-  }
-  if(is_array($_POST))
-  {
-    array_walk_recursive($_POST, 'sanitize_mysql_kv');
-  }
-  if(is_array($_COOKIE))
-  {
-    array_walk_recursive($_COOKIE, 'sanitize_mysql_kv');
-  }
+    function sanitize_mysql_kv(&$v, $k)
+    {
+        $v = addslashes($v);
+    }
+
+    if(is_array($_GET))
+    {
+        array_walk_recursive($_GET, 'sanitize_mysql_kv');
+    }
+
+    if(is_array($_POST))
+    {
+        array_walk_recursive($_POST, 'sanitize_mysql_kv');
+    }
+
+    if(is_array($_COOKIE))
+    {
+        array_walk_recursive($_COOKIE, 'sanitize_mysql_kv');
+    }
 }
+
 if ( !empty($_SERVER["PATH_INFO"]) )
 {
-  $_SERVER["PATH_INFO"] = addslashes($_SERVER["PATH_INFO"]);
+    $_SERVER["PATH_INFO"] = addslashes($_SERVER["PATH_INFO"]);
 }
 
 //
 // Define some basic configuration arrays this also prevents malicious
 // rewriting of language and otherarray values via URI params
-//
-$conf = array();
-$page = array(
-  'infos' => array(),
-  'errors' => array(),
-  'warnings' => array(),
-  );
-$user = array();
-$lang = array();
-$header_msgs = array();
-$header_notes = array();
-$filter = array();
+$app['page'] = function() {
+    return array(
+        'info'    => array(),
+        'error'   => array(),
+        'warning' => array(),
+    );
+};
 
-foreach(
-  array(
-    'gzopen'
-    ) as $func)
+$app['user'] = function() {
+    return array();
+};
+
+$app['lang'] = function() {
+    return array();
+};
+
+$app['header_msgs'] = function() {
+    return array();
+};
+
+$app['header_notes'] = function() {
+    return array();
+};
+
+$app['filter'] = function() {
+    return array();
+};
+
+foreach(array('gzopen') as $func)
 {
-  if (!function_exists($func))
-  {
-    include_once(PHPWG_ROOT_PATH . 'include/php_compat/'.$func.'.php');
-  }
+    if (!function_exists($func))
+    {
+        if (!function_exists('gzopen') && function_exists('gzopen64'))
+        {
+            function gzopen(string $filename , string $mode, int $use_include_path = null)
+            {
+                return gzopen64($filename, $mode, $use_include_path);
+            }
+        }
+    }
 }
 
-include(PHPWG_ROOT_PATH . 'include/config_default.inc.php');
-@include(PHPWG_ROOT_PATH. 'local/config/config.inc.php');
+$app['conf'] = function() {
+    /* Locate config dirs */
+    $configDir  = array(__DIR__ . '/../app/config');
 
-defined('PWG_LOCAL_DIR') or define('PWG_LOCAL_DIR', 'local/');
+    $locator    = new FileLocator($configDir);
+    $config     = new Configuration($locator);
 
-@include(PHPWG_ROOT_PATH.PWG_LOCAL_DIR .'config/database.inc.php');
-if (!defined('PHPWG_INSTALLED'))
+    $configFile = $locator->locate('config.yml', null, false);
+
+    return $config->load($configFile);
+};
+
+$app['conf']['local_dir'] = 'local/';
+
+if (false == $app['conf']['app']['installed'])
 {
-  header('Location: install.php');
-  exit;
+    header('Location: install.php');
+    exit;
 }
-include(PHPWG_ROOT_PATH .'include/dblayer/functions_'.$conf['dblayer'].'.inc.php');
 
-if(isset($conf['show_php_errors']) && !empty($conf['show_php_errors']))
+include(PHPWG_ROOT_PATH .'include/dblayer/functions_mysql.inc.php');
+
+
+if($app['conf']['debug']['show_php_errors'])
 {
-  @ini_set('error_reporting', $conf['show_php_errors']);
-  @ini_set('display_errors', true);
+    ini_set('error_reporting', $app['conf']['debug']['show_php_errors']);
+    ini_set('display_errors', true);
 }
 
-include(PHPWG_ROOT_PATH . 'include/constants.php');
 include(PHPWG_ROOT_PATH . 'include/functions.inc.php');
 
 $persistentCache = new PersistentFileCache();

@@ -7,22 +7,12 @@
 /* Import the autoloader and classes from external namespaces */
 require_once __DIR__ . '/vendor/autoload.php';
 
-use Symfony\Component\Config\FileLocator;
-use Piwigo\DependencyInjection\Configuration;
 use Piwigo\Controller\AdminController;
 use Doctrine\DBAL\Configuration as DbalConfiguration;
 use Doctrine\DBAL\DriverManager as DriverManager;
 use Piwigo\Security\Authorization;
 
-/* Locate config dirs */
-$configDir = array(__DIR__ . '/app/config');
-
-$locator    = new FileLocator($configDir);
-$config     = new Configuration($locator);
 $dbConfig   = new DbalConfiguration();
-
-$configFile = $locator->locate('config.yml', null, false);
-$configs    = $config->load($configFile);
 
 $connParams = array(
     'dbname'   => $configs['database']['name'],
@@ -50,7 +40,6 @@ trigger_notify('loc_begin_admin');
 // +-----------------------------------------------------------------------+
 // | Check Access and exit when user status is not ok                      |
 // +-----------------------------------------------------------------------+
-
 check_status(Authorization::ACCESS_ADMINISTRATOR);
 
 // +-----------------------------------------------------------------------+
@@ -295,6 +284,7 @@ $template->assign('ACTIVE_MENU', get_active_menu($page['page']));
 
 // Add the Piwigo Official menu
 $template->assign('pwgmenu', pwg_URL());
+var_dump($template->smarty->tpl_vars);exit;
 
 include(PHPWG_ROOT_PATH.'include/page_header.php');
 

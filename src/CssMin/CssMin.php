@@ -57,19 +57,21 @@ class CssMin
 	 * @var boolean
 	 */
 	private static $isVerbose = false;
-	/**
+	
+    /**
 	 * {@link http://goo.gl/JrW54 Autoload} function of CssMin.
 	 *
 	 * @param string $class Name of the class
 	 * @return void
 	 */
-	public static function autoload($class)
-		{
-		if (isset(self::$classIndex[$class]))
-			{
-			require(self::$classIndex[$class]);
-			}
-		}
+    //public static function autoload($class)
+    //{
+		//if (isset(self::$classIndex[$class]))
+		//{
+			//require(self::$classIndex[$class]);
+		//}
+	//}
+ 
 	/**
 	 * Return errors
 	 *
@@ -120,22 +122,23 @@ class CssMin
 		krsort(self::$classIndex);
 		// Only use autoloading if spl_autoload_register() is available and no __autoload() is defined (because
 		// __autoload() breaks if spl_autoload_register() is used.
-		if (function_exists("spl_autoload_register") && !is_callable("__autoload"))
-			{
-			spl_autoload_register(array(__CLASS__, "autoload"));
-			}
+		//if (function_exists("spl_autoload_register") && !is_callable("__autoload"))
+			//{
+			//spl_autoload_register(array(__CLASS__, "autoload"));
+			//}
 		// Otherwise include all class files
-		else
-			{
-			foreach (self::$classIndex as $class => $file)
-				{
-				if (!class_exists($class))
-					{
-					require_once($file);
-					}
-				}
-			}
+		//else
+			//{
+			//foreach (self::$classIndex as $class => $file)
+				//{
+				//if (!class_exists($class))
+					//{
+					//require_once($file);
+					//}
+				//}
+			//}
 		}
+
 	/**
 	 * Minifies CSS source.
 	 *
@@ -191,4 +194,4 @@ class CssMin
 		}
 	}
 // Initialises CssMin
-//CssMin::initialise();
+CssMin::initialise();
