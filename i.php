@@ -1,27 +1,11 @@
 <?php
-// +-----------------------------------------------------------------------+
-// | Piwigo - a PHP based photo gallery                                    |
-// +-----------------------------------------------------------------------+
-// | Copyright(C) 2008-2014 Piwigo Team                  http://piwigo.org |
-// +-----------------------------------------------------------------------+
-// | This program is free software; you can redistribute it and/or modify  |
-// | it under the terms of the GNU General Public License as published by  |
-// | the Free Software Foundation                                          |
-// |                                                                       |
-// | This program is distributed in the hope that it will be useful, but   |
-// | WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |
-// | General Public License for more details.                              |
-// |                                                                       |
-// | You should have received a copy of the GNU General Public License     |
-// | along with this program; if not, write to the Free Software           |
-// | Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, |
-// | USA.                                                                  |
-// +-----------------------------------------------------------------------+
+require_once __DIR__ . '/vendor/autoload.php';
+
+use Piwigo\Derivative\ImageStdParams;
+use Piwigo\Derivative\DerivativeParams;
 
 define('PHPWG_ROOT_PATH','./');
 
-// fast bootstrap - no db connection
 include(PHPWG_ROOT_PATH . 'include/config_default.inc.php');
 @include(PHPWG_ROOT_PATH. 'local/config/config.inc.php');
 
@@ -232,9 +216,9 @@ function parse_request()
 
   if (!isset($page['derivative_type']))
   {
-    if (derivative_to_url(IMG_CUSTOM) == $deriv[0])
+    if (derivative_to_url(ImageStdParams::IMG_CUSTOM) == $deriv[0])
     {
-      $page['derivative_type'] = IMG_CUSTOM;
+      $page['derivative_type'] = ImageStdParams::IMG_CUSTOM;
     }
     else
     {
@@ -243,7 +227,7 @@ function parse_request()
   }
   array_shift($deriv);
 
-  if ($page['derivative_type'] == IMG_CUSTOM)
+  if ($page['derivative_type'] == ImageStdParams::IMG_CUSTOM)
   {
     $params = $page['derivative_params'] = parse_custom_params($deriv);
     ImageStdParams::apply_global($params);
@@ -256,7 +240,7 @@ function parse_request()
     {
       ierror('Invalid crop', 400);
     }
-    $greatest = ImageStdParams::get_by_type(IMG_XXLARGE);
+    $greatest = ImageStdParams::get_by_type(ImageStdParams::IMG_XXLARGE);
 
     $key = array();
     $params->add_url_tokens($key);
@@ -508,7 +492,7 @@ else
 }
 pwg_db_close();
 
-if (!try_switch_source($params, $src_mtime) && $params->type==IMG_CUSTOM)
+if (!try_switch_source($params, $src_mtime) && $params->type == ImageStdParams::IMG_CUSTOM)
 {
 	$sharpen = 0;
 	foreach (ImageStdParams::get_defined_type_map() as $std_params)

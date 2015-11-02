@@ -142,7 +142,7 @@ class Template
     {
       $lang_info['plupload_code'] = str_replace('-', '_', $lang_info['jquery_code']);
     }
-    
+
     $this->smarty->assign('lang_info', $lang_info);
 
     if (!defined('IN_ADMIN') and isset($conf['extents_for_templates']))
@@ -192,7 +192,7 @@ class Template
     {
       $themeconf['colorscheme'] = $colorscheme;
     }
-    
+
     $this->smarty->append('themes', $tpl_var);
     $this->smarty->append('themeconf', $themeconf, true);
   }
@@ -676,7 +676,7 @@ class Template
   {
     return explode($delimiter, $text);
   }
-  
+
   /**
    * ternary variable modifier.
    * Usage :
@@ -1963,9 +1963,13 @@ final class FileCombiner
       $content = $template->parse($handle, true);
 
       if ($this->is_css)
+      {
         $content = self::process_css($content, $combinable->path, $header );
+      }
       else
+      {
         $content = self::process_js($content, $combinable->path );
+      }
 
       if ($return_content)
         return $content;
@@ -2019,14 +2023,16 @@ final class FileCombiner
     private static function process_css($css, $file, &$header)
     {
         $css = self::process_css_rec($css, dirname($file), $header);
-    
+
+        var_dump($css);
         if (strpos($file, '.min') === false and version_compare(PHP_VERSION, '5.2.4', '>='))
         {
             $css = CssMin::minify($css, array('Variables'=>false));
         }
-    
+        var_dump($css);
+        exit;
         $css = trigger_change('combined_css_postfilter', $css);
-    
+
         return $css;
   }
 
@@ -2062,11 +2068,11 @@ final class FileCombiner
     if (preg_match_all($PATTERN_IMPORT, $css, $matches, PREG_SET_ORDER))
     {
       $search = $replace = array();
-      
+
       foreach ($matches as $match)
       {
         $search[] = $match[0];
-        
+
         if (
           strpos($match[1], '..') !== false // Possible attempt to get out of Piwigo's dir
           or strpos($match[1], '://') !== false // Remote URL
@@ -2091,5 +2097,3 @@ final class FileCombiner
     return $css;
   }
 }
-
-?>

@@ -3,6 +3,8 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use Piwigo\Model\RegisteredBlock;
 
+include_once(PHPWG_ROOT_PATH.'include/functions.inc.php');
+include_once(PHPWG_ROOT_PATH.'include/functions_url.inc.php');
 
 /**
  * Generates breadcrumb from categories list.

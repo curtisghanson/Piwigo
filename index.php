@@ -1,33 +1,11 @@
 <?php
-// +-----------------------------------------------------------------------+
-// | Piwigo - a PHP based photo gallery                                    |
-// +-----------------------------------------------------------------------+
-// | Copyright(C) 2008-2014 Piwigo Team                  http://piwigo.org |
-// | Copyright(C) 2003-2008 PhpWebGallery Team    http://phpwebgallery.net |
-// | Copyright(C) 2002-2003 Pierrick LE GALL   http://le-gall.net/pierrick |
-// +-----------------------------------------------------------------------+
-// | This program is free software; you can redistribute it and/or modify  |
-// | it under the terms of the GNU General Public License as published by  |
-// | the Free Software Foundation                                          |
-// |                                                                       |
-// | This program is distributed in the hope that it will be useful, but   |
-// | WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |
-// | General Public License for more details.                              |
-// |                                                                       |
-// | You should have received a copy of the GNU General Public License     |
-// | along with this program; if not, write to the Free Software           |
-// | Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, |
-// | USA.                                                                  |
-// +-----------------------------------------------------------------------+
-
-//--------------------------------------------------------------------- include
-
 /* Import the autoloader and classes from external namespaces */
 require_once __DIR__ . '/vendor/autoload.php';
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Piwigo\Security\Authorization;
+use Piwigo\Derivative\ImageStdParams;
 
 /* Build the request and response objects using HttpFoundation */
 $request  = Request::createFromGlobals();
@@ -38,7 +16,7 @@ include_once( PHPWG_ROOT_PATH.'include/common.inc.php' );
 include(PHPWG_ROOT_PATH.'include/section_init.inc.php');
 
 // Check Access and exit when user status is not ok
-check_status(ACCESS_GUEST);
+check_status(Authorization::ACCESS_GUEST);
 
 
 // access authorization check
@@ -139,7 +117,7 @@ if ( empty($page['is_external']) or !$page['is_external'] )
 {
   //----------------------------------------------------- template initialization
   $page['body_id'] = 'theCategoryPage';
-  
+
   if (isset($page['flat']) or isset($page['chronology_field']))
   {
     $template->assign(
@@ -249,7 +227,7 @@ if ( empty($page['is_external']) or !$page['is_external'] )
       $tag['URL'] = make_index_url(array('tags'=>array($tag)));
       $template->append( 'tag_search_results', $tag);
     }
-    
+
     if (empty($page['items']))
     {
       $template->append( 'no_search_results', htmlspecialchars($page['qsearch_details']['q']));
@@ -268,7 +246,7 @@ if ( empty($page['is_external']) or !$page['is_external'] )
   {
     $preferred_image_orders = get_category_preferred_image_orders();
     $order_idx = pwg_get_session_var( 'image_order', 0 );
-    
+
     // get first order field and direction
     $first_order = substr($conf['order_by'], 9);
     if (($pos = strpos($first_order, ',')) !== false)
@@ -276,14 +254,14 @@ if ( empty($page['is_external']) or !$page['is_external'] )
       $first_order = substr($first_order, 0, $pos);
     }
     $first_order = trim($first_order);
-    
+
     $url = add_url_params(
             duplicate_index_url(),
             array('image_order' => '')
           );
     $tpl_orders = array();
     $order_selected = false;
-    
+
     foreach ($preferred_image_orders as $order_id => $order)
     {
       if ($order[2])
@@ -294,7 +272,7 @@ if ( empty($page['is_external']) or !$page['is_external'] )
           $order_idx = $order_id;
           $order_selected = true;
         }
-        
+
         $tpl_orders[ $order_id ] = array(
           'DISPLAY' => $order[0],
           'URL' => $url.$order_id,
@@ -302,7 +280,7 @@ if ( empty($page['is_external']) or !$page['is_external'] )
           );
       }
     }
-    
+
     $tpl_orders[0]['SELECTED'] = !$order_selected; // unselect "Default" if another one is selected
     $template->assign('image_orders', $tpl_orders);
   }
@@ -336,12 +314,12 @@ if ( empty($page['is_external']) or !$page['is_external'] )
             duplicate_index_url(),
             array('display' => '')
           );
-    
+
     $selected_type = $template->get_template_vars('derivative_params')->type;
     $template->clear_assign( 'derivative_params' );
     $type_map = ImageStdParams::get_defined_type_map();
-    unset($type_map[IMG_XXLARGE], $type_map[IMG_XLARGE]);
-    
+    unset($type_map[ImageStdParams::IMG_XXLARGE], $type_map[ImageStdParams::IMG_XLARGE]);
+
     foreach($type_map as $params)
     {
       $template->append(
@@ -380,4 +358,3 @@ $template->pparse('index');
 //------------------------------------------------------------ log informations
 pwg_log();
 include(PHPWG_ROOT_PATH.'include/page_tail.php');
-?>

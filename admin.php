@@ -12,6 +12,7 @@ use Piwigo\DependencyInjection\Configuration;
 use Piwigo\Controller\AdminController;
 use Doctrine\DBAL\Configuration as DbalConfiguration;
 use Doctrine\DBAL\DriverManager as DriverManager;
+use Piwigo\Security\Authorization;
 
 /* Locate config dirs */
 $configDir = array(__DIR__ . '/app/config');
@@ -50,7 +51,7 @@ trigger_notify('loc_begin_admin');
 // | Check Access and exit when user status is not ok                      |
 // +-----------------------------------------------------------------------+
 
-check_status(ACCESS_ADMINISTRATOR);
+check_status(Authorization::ACCESS_ADMINISTRATOR);
 
 // +-----------------------------------------------------------------------+
 // | Direct actions                                                        |

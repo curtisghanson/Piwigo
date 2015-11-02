@@ -1,30 +1,12 @@
 <?php
-// +-----------------------------------------------------------------------+
-// | Piwigo - a PHP based photo gallery                                    |
-// +-----------------------------------------------------------------------+
-// | Copyright(C) 2008-2014 Piwigo Team                  http://piwigo.org |
-// | Copyright(C) 2003-2008 PhpWebGallery Team    http://phpwebgallery.net |
-// | Copyright(C) 2002-2003 Pierrick LE GALL   http://le-gall.net/pierrick |
-// +-----------------------------------------------------------------------+
-// | This program is free software; you can redistribute it and/or modify  |
-// | it under the terms of the GNU General Public License as published by  |
-// | the Free Software Foundation                                          |
-// |                                                                       |
-// | This program is distributed in the hope that it will be useful, but   |
-// | WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |
-// | General Public License for more details.                              |
-// |                                                                       |
-// | You should have received a copy of the GNU General Public License     |
-// | along with this program; if not, write to the Free Software           |
-// | Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, |
-// | USA.                                                                  |
-// +-----------------------------------------------------------------------+
 require_once __DIR__ . '/../vendor/autoload.php';
+
+include_once(PHPWG_ROOT_PATH.'/include/common.inc.php');
 include_once(PHPWG_ROOT_PATH.'/include/functions_plugins.inc.php');
 
 use Piwigo\Http\Message;
 use Piwigo\Security\PasswordHash;
+use Piwigo\Security\Authorization;
 
 /**
  * @package functions\user
@@ -352,10 +334,10 @@ SELECT ';
       $query.= '
      , ';
     }
-    $query.= $dbfield.' AS '.$pwgfield;
+    $query .= $dbfield . ' AS ' . $pwgfield;
   }
   $query.= '
-  FROM '.USERS_TABLE.'
+  FROM ' . USERS_TABLE . '
   WHERE '.$conf['user_fields']['id'].' = \''.$user_id.'\'';
 
   $row = pwg_db_fetch_assoc(pwg_query($query));
@@ -1228,32 +1210,32 @@ function get_access_type_status($user_status='')
     case 'guest':
     {
       $access_type_status =
-        ($conf['guest_access'] ? ACCESS_GUEST : ACCESS_FREE);
+        ($conf['guest_access'] ? Authorization::ACCESS_GUEST : Authorization::ACCESS_FREE);
       break;
     }
     case 'generic':
     {
-      $access_type_status = ACCESS_GUEST;
+      $access_type_status = Authorization::ACCESS_GUEST;
       break;
     }
     case 'normal':
     {
-      $access_type_status = ACCESS_CLASSIC;
+      $access_type_status = Authorization::ACCESS_CLASSIC;
       break;
     }
     case 'admin':
     {
-      $access_type_status = ACCESS_ADMINISTRATOR;
+      $access_type_status = Authorization::ACCESS_ADMINISTRATOR;
       break;
     }
     case 'webmaster':
     {
-      $access_type_status = ACCESS_WEBMASTER;
+      $access_type_status = Authorization::ACCESS_WEBMASTER;
       break;
     }
     default:
     {
-      $access_type_status = ACCESS_FREE;
+      $access_type_status = Authorization::ACCESS_FREE;
       break;
     }
   }
@@ -1317,7 +1299,7 @@ function is_a_guest($user_status='')
  */
 function is_classic_user($user_status='')
 {
-  return is_autorize_status(ACCESS_CLASSIC, $user_status);
+  return is_autorize_status(Authorization::ACCESS_CLASSIC, $user_status);
 }
 
 /**
@@ -1328,7 +1310,7 @@ function is_classic_user($user_status='')
  */
 function is_admin($user_status='')
 {
-  return is_autorize_status(ACCESS_ADMINISTRATOR, $user_status);
+  return is_autorize_status(Authorization::ACCESS_ADMINISTRATOR, $user_status);
 }
 
 /**
@@ -1339,7 +1321,7 @@ function is_admin($user_status='')
  */
 function is_webmaster($user_status='')
 {
-  return is_autorize_status(ACCESS_WEBMASTER, $user_status);
+  return is_autorize_status(Authorization::ACCESS_WEBMASTER, $user_status);
 }
 
 /**

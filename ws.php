@@ -7,13 +7,15 @@ use Piwigo\Http\Encoder\RestEncoder;
 use Piwigo\Http\Encoder\SerialPhpEncoder;
 use Piwigo\Http\Encoder\JsonEncoder;
 use Piwigo\Http\Encoder\XmlRpcEncoder;
+use Piwigo\Security\Authorization;
 
 define ('PHPWG_ROOT_PATH', './');
 define ('IN_WS', true);
 
 include_once(PHPWG_ROOT_PATH.'include/functions_user.inc.php');
+include_once(PHPWG_ROOT_PATH.'include/functions_html.inc.php');
 
-check_status(ACCESS_FREE);
+check_status(Authorization::ACCESS_FREE);
 
 if ( !$conf['allow_web_services'] )
 {
@@ -82,10 +84,10 @@ function ws_addDefaultMethods( $arr )
 {
   global $conf, $user;
   $service = &$arr[0];
-  
+
   include_once(PHPWG_ROOT_PATH.'include/ws_functions.inc.php');
   $ws_functions_root = PHPWG_ROOT_PATH.'include/ws_functions/';
-  
+
   $f_params = array(
     'f_min_rate' => array('default'=>null,
                           'type'=>WS_TYPE_FLOAT),
@@ -106,7 +108,7 @@ function ws_addDefaultMethods( $arr )
     'f_min_date_created' =>   array('default'=>null),
     'f_max_date_created' =>   array('default'=>null),
     );
-  
+
   $service->addMethod(
       'pwg.getVersion',
       'ws_getVersion',
@@ -114,7 +116,7 @@ function ws_addDefaultMethods( $arr )
       'Returns the Piwigo version.',
       $ws_functions_root . 'pwg.php'
     );
-	  
+
   $service->addMethod(
       'pwg.getInfos',
       'ws_getInfos',
@@ -140,7 +142,7 @@ function ws_addDefaultMethods( $arr )
       'pwg.categories.getImages',
       'ws_categories_getImages',
       array_merge(array(
-        'cat_id' =>     array('default'=>null, 
+        'cat_id' =>     array('default'=>null,
                               'flags'=>WS_PARAM_FORCE_ARRAY,
                               'type'=>WS_TYPE_INT|WS_TYPE_POSITIVE),
         'recursive' =>  array('default'=>false,
@@ -469,7 +471,7 @@ function ws_addDefaultMethods( $arr )
       $ws_functions_root . 'pwg.images.php',
       array('admin_only'=>true, 'post_only'=>true)
     );
-  
+
   $service->addMethod(
       'pwg.images.delete',
       'ws_images_delete',
@@ -647,7 +649,7 @@ function ws_addDefaultMethods( $arr )
       $ws_functions_root . 'pwg.categories.php',
       array('admin_only'=>true, 'post_only'=>true)
     );
-  
+
   $service->addMethod(
       'pwg.plugins.getList',
       'ws_plugins_getList',
@@ -917,7 +919,7 @@ enabled_high, registration_date, registration_date_string, registration_date_sin
       $ws_functions_root . 'pwg.users.php',
       array('admin_only'=>true, 'post_only'=>true)
     );
-    
+
   $service->addMethod(
       'pwg.permissions.getList',
       'ws_permissions_getList',
@@ -934,7 +936,7 @@ enabled_high, registration_date, registration_date_string, registration_date_sin
       $ws_functions_root . 'pwg.permissions.php',
       array('admin_only'=>true)
     );
-    
+
   $service->addMethod(
       'pwg.permissions.add',
       'ws_permissions_add',
@@ -953,7 +955,7 @@ enabled_high, registration_date, registration_date_string, registration_date_sin
       $ws_functions_root . 'pwg.permissions.php',
       array('admin_only'=>true, 'post_only'=>true)
     );
-    
+
   $service->addMethod(
       'pwg.permissions.remove',
       'ws_permissions_remove',
