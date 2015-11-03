@@ -1,11 +1,8 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
-
+use Piwigo\Application;
 use Piwigo\Cache\PersistentFileCache;
-
-/**
- * @package functions\___
- */
+use Piwigo\Device\UagentInfo;
 
 include_once( PHPWG_ROOT_PATH .'include/functions_plugins.inc.php' );
 include_once( PHPWG_ROOT_PATH .'include/functions_user.inc.php' );
@@ -26,8 +23,8 @@ include_once( PHPWG_ROOT_PATH .'include/template.class.php');
  */
 function get_filename_wo_extension($filename)
 {
-  $pos = strrpos($filename, '.');
-  return ($pos===false) ? $filename : substr( $filename, 0, $pos);
+    $pos = strrpos($filename, '.');
+    return ($pos===false) ? $filename : substr( $filename, 0, $pos);
 }
 
 /** no option for mkgetdir() */
@@ -52,40 +49,39 @@ define('MKGETDIR_DEFAULT', MKGETDIR_RECURSIVE | MKGETDIR_DIE_ON_ERROR | MKGETDIR
  */
 function mkgetdir($dir, $flags=MKGETDIR_DEFAULT)
 {
-  if (!is_dir($dir))
-  {
-    global $conf;
-    if (substr(PHP_OS, 0, 3) == 'WIN')
+    if (!is_dir($dir))
     {
-      $dir = str_replace('/', DIRECTORY_SEPARATOR, $dir);
+        global $conf;
+        if (substr(PHP_OS, 0, 3) == 'WIN')
+        {
+            $dir = str_replace('/', DIRECTORY_SEPARATOR, $dir);
+        }
+        $umask = umask(0);
+        $mkd = @mkdir($dir, $conf['chmod_value'], ($flags&MKGETDIR_RECURSIVE) ? true:false );
+        umask($umask);
+        if ($mkd==false)
+        {
+            !($flags&MKGETDIR_DIE_ON_ERROR) or fatal_error( "$dir ".l10n('no write access'));
+            return false;
+        }
+        if( $flags&MKGETDIR_PROTECT_HTACCESS )
+        {
+            $file = $dir.'/.htaccess';
+            file_exists($file) or @file_put_contents($file, 'deny from all');
+        }
+        if( $flags&MKGETDIR_PROTECT_INDEX )
+        {
+            $file = $dir.'/index.htm';
+            file_exists($file) or @file_put_contents($file, 'Not allowed!');
+        }
     }
-    $umask = umask(0);
-    $mkd = @mkdir($dir, $conf['chmod_value'], ($flags&MKGETDIR_RECURSIVE) ? true:false );
-    umask($umask);
-    if ($mkd==false)
+    if (!is_writable($dir))
     {
-      !($flags&MKGETDIR_DIE_ON_ERROR) or fatal_error( "$dir ".l10n('no write access'));
-      return false;
+        !($flags&MKGETDIR_DIE_ON_ERROR) or fatal_error( "$dir ".l10n('no write access'));
+        return false;
     }
-    if( $flags&MKGETDIR_PROTECT_HTACCESS )
-    {
-      $file = $dir.'/.htaccess';
-      file_exists($file) or @file_put_contents($file, 'deny from all');
-    }
-    if( $flags&MKGETDIR_PROTECT_INDEX )
-    {
-      $file = $dir.'/index.htm';
-      file_exists($file) or @file_put_contents($file, 'Not allowed!');
-    }
-  }
-  if (!is_writable($dir))
-  {
-    !($flags&MKGETDIR_DIE_ON_ERROR) or fatal_error( "$dir ".l10n('no write access'));
-    return false;
-  }
-  return true;
+    return true;
 }
-
 
 /**
  * returns an array with a list of {language_code => language_name}
@@ -94,19 +90,19 @@ function mkgetdir($dir, $flags=MKGETDIR_DEFAULT)
  */
 function get_languages()
 {
-    $query = 'SELECT id, name FROM ' . LANGUAGES_TABLE . ' ORDER BY name ASC;';
-    $result = pwg_query($query);
+        $query = 'SELECT id, name FROM ' . LANGUAGES_TABLE . ' ORDER BY name ASC;';
+        $result = pwg_query($query);
 
-    $languages = array();
-    while ($row = pwg_db_fetch_assoc($result))
-    {
-        if (is_dir(PHPWG_ROOT_PATH.'language/'.$row['id']))
+        $languages = array();
+        while ($row = pwg_db_fetch_assoc($result))
         {
-            $languages[$row['id']] = $row['name'];
+                if (is_dir(PHPWG_ROOT_PATH.'language/'.$row['id']))
+                {
+                        $languages[$row['id']] = $row['name'];
+                }
         }
-    }
 
-    return $languages;
+        return $languages;
 }
 
 /**
@@ -118,63 +114,63 @@ function get_languages()
  */
 function pwg_log($image_id = null, $image_type = null)
 {
-    global $conf, $user, $page;
+        global $conf, $user, $page;
 
-    $do_log = $conf['log'];
-    if (is_admin())
-    {
-        $do_log = $conf['history_admin'];
-    }
-  
-    if (is_a_guest())
-    {
-        $do_log = $conf['history_guest'];
-    }
+        $do_log = $conf['log'];
+        if (is_admin())
+        {
+                $do_log = $conf['history_admin'];
+        }
 
-    $do_log = trigger_change('pwg_log_allowed', $do_log, $image_id, $image_type);
+        if (is_a_guest())
+        {
+                $do_log = $conf['history_guest'];
+        }
 
-    if (!$do_log)
-    {
-        return false;
-    }
+        $do_log = trigger_change('pwg_log_allowed', $do_log, $image_id, $image_type);
 
-    $tags_string = null;
-  
-    if ('tags'==@$page['section'])
-    {
-        $tags_string = implode(',', $page['tag_ids']);
-    }
+        if (!$do_log)
+        {
+                return false;
+        }
 
-  $query = '
+        $tags_string = null;
+
+        if ('tags'==@$page['section'])
+        {
+                $tags_string = implode(',', $page['tag_ids']);
+        }
+
+    $query = '
 INSERT INTO '.HISTORY_TABLE.'
-  (
-    date,
-    time,
-    user_id,
-    IP,
-    section,
-    category_id,
-    image_id,
-    image_type,
-    tag_ids
-  )
-  VALUES
-  (
-    CURRENT_DATE,
-    CURRENT_TIME,
-    '.$user['id'].',
-    \''.$_SERVER['REMOTE_ADDR'].'\',
-    '.(isset($page['section']) ? "'".$page['section']."'" : 'NULL').',
-    '.(isset($page['category']['id']) ? $page['category']['id'] : 'NULL').',
-    '.(isset($image_id) ? $image_id : 'NULL').',
-    '.(isset($image_type) ? "'".$image_type."'" : 'NULL').',
-    '.(isset($tags_string) ? "'".$tags_string."'" : 'NULL').'
-  )
+    (
+        date,
+        time,
+        user_id,
+        IP,
+        section,
+        category_id,
+        image_id,
+        image_type,
+        tag_ids
+    )
+    VALUES
+    (
+        CURRENT_DATE,
+        CURRENT_TIME,
+        '.$user['id'].',
+        \''.$_SERVER['REMOTE_ADDR'].'\',
+        '.(isset($page['section']) ? "'".$page['section']."'" : 'NULL').',
+        '.(isset($page['category']['id']) ? $page['category']['id'] : 'NULL').',
+        '.(isset($image_id) ? $image_id : 'NULL').',
+        '.(isset($image_type) ? "'".$image_type."'" : 'NULL').',
+        '.(isset($tags_string) ? "'".$tags_string."'" : 'NULL').'
+    )
 ;';
-  
-    pwg_query($query);
 
-    return true;
+        pwg_query($query);
+
+        return true;
 }
 
 /**
@@ -184,16 +180,16 @@ INSERT INTO '.HISTORY_TABLE.'
  */
 function pwg_debug($string)
 {
-  global $debug,$t2,$page;
+    global $debug,$t2,$page;
 
-  $now = explode(' ', microtime());
-  $now2 = explode( '.', $now[0] );
-  $now2 = $now[1].'.'.$now2[1];
-  $time = number_format( $now2 - $t2, 3, '.', ' ').' s';
-  $debug .= '<p>';
-  $debug.= '['.$time.', ';
-  $debug.= $page['count_queries'].' queries] : '.$string;
-  $debug.= "</p>\n";
+    $now = explode(' ', microtime());
+    $now2 = explode( '.', $now[0] );
+    $now2 = $now[1].'.'.$now2[1];
+    $time = number_format( $now2 - $t2, 3, '.', ' ').' s';
+    $debug .= '<p>';
+    $debug.= '['.$time.', ';
+    $debug.= $page['count_queries'].' queries] : '.$string;
+    $debug.= "</p>\n";
 }
 
 /**
@@ -206,16 +202,16 @@ function pwg_debug($string)
  */
 function redirect_http($url)
 {
-  if (ob_get_length () !== FALSE)
-  {
-    ob_clean();
-  }
-  // default url is on html format
-  $url = html_entity_decode($url);
-  header('Request-URI: '.$url);
-  header('Content-Location: '.$url);
-  header('Location: '.$url);
-  exit();
+    if (ob_get_length () !== FALSE)
+    {
+        ob_clean();
+    }
+    // default url is on html format
+    $url = html_entity_decode($url);
+    header('Request-URI: '.$url);
+    header('Content-Location: '.$url);
+    header('Location: '.$url);
+    exit();
 }
 
 /**
@@ -230,42 +226,42 @@ function redirect_http($url)
  */
 function redirect_html( $url , $msg = '', $refresh_time = 0)
 {
-  global $user, $template, $lang_info, $conf, $lang, $t2, $page, $debug;
+    global $user, $template, $lang_info, $conf, $lang, $t2, $page, $debug;
 
-  if (!isset($lang_info) || !isset($template) )
-  {
-    $user = build_user( $conf['guest_id'], true);
-    load_language('common.lang');
-    trigger_notify('loading_lang');
-    load_language('lang', PHPWG_ROOT_PATH.PWG_LOCAL_DIR, array('no_fallback'=>true, 'local'=>true) );
-    $template = new Template(PHPWG_ROOT_PATH.'themes', get_default_theme());
-  }
-	elseif (defined('IN_ADMIN') and IN_ADMIN)
-	{
-		$template = new Template(PHPWG_ROOT_PATH.'themes', get_default_theme());
-	}
+    if (!isset($lang_info) || !isset($template) )
+    {
+        $user = build_user( $conf['guest_id'], true);
+        load_language('common.lang');
+        trigger_notify('loading_lang');
+        load_language('lang', PHPWG_ROOT_PATH.PWG_LOCAL_DIR, array('no_fallback'=>true, 'local'=>true) );
+        $template = new Template(PHPWG_ROOT_PATH.'themes', get_default_theme());
+    }
+    elseif (defined('IN_ADMIN') and IN_ADMIN)
+    {
+        $template = new Template(PHPWG_ROOT_PATH.'themes', get_default_theme());
+    }
 
-  if (empty($msg))
-  {
-    $msg = nl2br(l10n('Redirection...'));
-  }
+    if (empty($msg))
+    {
+        $msg = nl2br(l10n('Redirection...'));
+    }
 
-  $refresh = $refresh_time;
-  $url_link = $url;
-  $title = 'redirection';
+    $refresh = $refresh_time;
+    $url_link = $url;
+    $title = 'redirection';
 
-  $template->set_filenames(array( 'redirect' => 'redirect.tpl' ));
+    $template->set_filenames(array( 'redirect' => 'redirect.tpl' ));
 
-  include( PHPWG_ROOT_PATH.'include/page_header.php' );
+    include( PHPWG_ROOT_PATH.'include/page_header.php' );
 
-  $template->set_filenames(array( 'redirect' => 'redirect.tpl' ));
-  $template->assign('REDIRECT_MSG', $msg);
+    $template->set_filenames(array( 'redirect' => 'redirect.tpl' ));
+    $template->assign('REDIRECT_MSG', $msg);
 
-  $template->parse('redirect');
+    $template->parse('redirect');
 
-  include( PHPWG_ROOT_PATH.'include/page_tail.php' );
+    include( PHPWG_ROOT_PATH.'include/page_tail.php' );
 
-  exit();
+    exit();
 }
 
 /**
@@ -280,20 +276,20 @@ function redirect_html( $url , $msg = '', $refresh_time = 0)
  */
 function redirect( $url , $msg = '', $refresh_time = 0)
 {
-  global $conf;
+    global $conf;
 
-  // with RefeshTime <> 0, only html must be used
-  if ($conf['default_redirect_method']=='http'
-      and $refresh_time==0
-      and !headers_sent()
-    )
-  {
-    redirect_http($url);
-  }
-  else
-  {
-    redirect_html($url, $msg, $refresh_time);
-  }
+    // with RefeshTime <> 0, only html must be used
+    if ($conf['default_redirect_method']=='http'
+            and $refresh_time==0
+            and !headers_sent()
+        )
+    {
+        redirect_http($url);
+    }
+    else
+    {
+        redirect_html($url, $msg, $refresh_time);
+    }
 }
 
 /**
@@ -304,38 +300,38 @@ function redirect( $url , $msg = '', $refresh_time = 0)
  */
 function get_pwg_themes($show_mobile=false)
 {
-  global $conf;
+    global $conf;
 
-  $themes = array();
+    $themes = array();
 
-  $query = '
+    $query = '
 SELECT
-    id,
-    name
-  FROM '.THEMES_TABLE.'
-  ORDER BY name ASC
+        id,
+        name
+    FROM '.THEMES_TABLE.'
+    ORDER BY name ASC
 ;';
-  $result = pwg_query($query);
-  while ($row = pwg_db_fetch_assoc($result))
-  {
-    if ($row['id'] == $conf['mobile_theme'])
+    $result = pwg_query($query);
+    while ($row = pwg_db_fetch_assoc($result))
     {
-      if (!$show_mobile)
-      {
-        continue;
-      }
-      $row['name'] .= ' ('.l10n('Mobile').')';
+        if ($row['id'] == $conf['mobile_theme'])
+        {
+            if (!$show_mobile)
+            {
+                continue;
+            }
+            $row['name'] .= ' ('.l10n('Mobile').')';
+        }
+        if (check_theme_installed($row['id']))
+        {
+            $themes[ $row['id'] ] = $row['name'];
+        }
     }
-    if (check_theme_installed($row['id']))
-    {
-      $themes[ $row['id'] ] = $row['name'];
-    }
-  }
 
-  // plugins want remove some themes based on user status maybe?
-  $themes = trigger_change('get_pwg_themes', $themes);
+    // plugins want remove some themes based on user status maybe?
+    $themes = trigger_change('get_pwg_themes', $themes);
 
-  return $themes;
+    return $themes;
 }
 
 /**
@@ -346,9 +342,9 @@ SELECT
  */
 function check_theme_installed($theme_id)
 {
-  global $conf;
+    global $conf;
 
-  return file_exists($conf['themes_dir'].'/'.$theme_id.'/'.'themeconf.inc.php');
+    return file_exists($conf['themes_dir'].'/'.$theme_id.'/'.'themeconf.inc.php');
 }
 
 /**
@@ -360,11 +356,11 @@ function check_theme_installed($theme_id)
  */
 function original_to_representative($path, $representative_ext)
 {
-    $pos  = strrpos($path, '/');
-    $path = substr_replace($path, 'pwg_representative/', $pos + 1, 0);
-    $pos  = strrpos($path, '.');
-  
-    return substr_replace($path, $representative_ext, $pos + 1);
+        $pos  = strrpos($path, '/');
+        $path = substr_replace($path, 'pwg_representative/', $pos + 1, 0);
+        $pos  = strrpos($path, '.');
+
+        return substr_replace($path, $representative_ext, $pos + 1);
 }
 
 /**
@@ -375,16 +371,15 @@ function original_to_representative($path, $representative_ext)
  */
 function get_element_path($element_info)
 {
-    $path = $element_info['path'];
-  
-    if (!url_is_remote($path))
-    {
-        $path = PHPWG_ROOT_PATH.$path;
-    }
-  
-    return $path;
-}
+        $path = $element_info['path'];
 
+        if (!url_is_remote($path))
+        {
+                $path = PHPWG_ROOT_PATH.$path;
+        }
+
+        return $path;
+}
 
 /**
  * fill the current user caddie with given elements, if not already in caddie
@@ -393,31 +388,31 @@ function get_element_path($element_info)
  */
 function fill_caddie($elements_id)
 {
-  global $user;
+    global $user;
 
-  $query = '
+    $query = '
 SELECT element_id
-  FROM '.CADDIE_TABLE.'
-  WHERE user_id = '.$user['id'].'
+    FROM '.CADDIE_TABLE.'
+    WHERE user_id = '.$user['id'].'
 ;';
-  $in_caddie = query2array($query, null, 'element_id');
+    $in_caddie = query2array($query, null, 'element_id');
 
-  $caddiables = array_diff($elements_id, $in_caddie);
+    $caddiables = array_diff($elements_id, $in_caddie);
 
-  $datas = array();
+    $datas = array();
 
-  foreach ($caddiables as $caddiable)
-  {
-    $datas[] = array(
-      'element_id' => $caddiable,
-      'user_id' => $user['id'],
-      );
-  }
+    foreach ($caddiables as $caddiable)
+    {
+        $datas[] = array(
+            'element_id' => $caddiable,
+            'user_id' => $user['id'],
+            );
+    }
 
-  if (count($caddiables) > 0)
-  {
-    mass_inserts(CADDIE_TABLE, array('element_id','user_id'), $datas);
-  }
+    if (count($caddiables) > 0)
+    {
+        mass_inserts(CADDIE_TABLE, array('element_id','user_id'), $datas);
+    }
 }
 
 /**
@@ -429,7 +424,7 @@ SELECT element_id
  */
 function get_name_from_file($filename)
 {
-  return str_replace('_',' ',get_filename_wo_extension($filename));
+    return str_replace('_',' ',get_filename_wo_extension($filename));
 }
 
 /**
@@ -443,24 +438,24 @@ function get_name_from_file($filename)
  */
 function l10n($key)
 {
-  global $lang, $conf;
+    global $lang, $conf;
 
-  if ( ($val=@$lang[$key]) === null)
-  {
-    if ($conf['debug_l10n'] and !isset($lang[$key]) and !empty($key))
+    if ( ($val=@$lang[$key]) === null)
     {
-      trigger_error('[l10n] language key "'. $key .'" not defined', E_USER_WARNING);
+        if ($conf['debug_l10n'] and !isset($lang[$key]) and !empty($key))
+        {
+            trigger_error('[l10n] language key "'. $key .'" not defined', E_USER_WARNING);
+        }
+        $val = $key;
     }
-    $val = $key;
-  }
 
-  if (func_num_args() > 1)
-  {
-    $args = func_get_args();
-    $val = vsprintf($val, array_slice($args, 1));
-  }
+    if (func_num_args() > 1)
+    {
+        $args = func_get_args();
+        $val = vsprintf($val, array_slice($args, 1));
+    }
 
-  return $val;
+    return $val;
 }
 
 /**
@@ -474,15 +469,15 @@ function l10n($key)
  */
 function l10n_dec($singular_key, $plural_key, $decimal)
 {
-  global $lang_info;
+    global $lang_info;
 
-  return
-    sprintf(
-      l10n((
-        (($decimal > 1) or ($decimal == 0 and $lang_info['zero_plural']))
-          ? $plural_key
-          : $singular_key
-        )), $decimal);
+    return
+        sprintf(
+            l10n((
+                (($decimal > 1) or ($decimal == 0 and $lang_info['zero_plural']))
+                    ? $plural_key
+                    : $singular_key
+                )), $decimal);
 }
 
 /**
@@ -495,15 +490,15 @@ function l10n_dec($singular_key, $plural_key, $decimal)
  */
 function get_l10n_args($key, $args='')
 {
-  if (is_array($args))
-  {
-    $key_arg = array_merge(array($key), $args);
-  }
-  else
-  {
-    $key_arg = array($key,  $args);
-  }
-  return array('key_args' => $key_arg);
+    if (is_array($args))
+    {
+        $key_arg = array_merge(array($key), $args);
+    }
+    else
+    {
+        $key_arg = array($key,  $args);
+    }
+    return array('key_args' => $key_arg);
 }
 
 /**
@@ -517,36 +512,36 @@ function get_l10n_args($key, $args='')
  */
 function l10n_args($key_args, $sep = "\n")
 {
-  if (is_array($key_args))
-  {
-    foreach ($key_args as $key => $element)
+    if (is_array($key_args))
     {
-      if (isset($result))
-      {
-        $result .= $sep;
-      }
-      else
-      {
-        $result = '';
-      }
+        foreach ($key_args as $key => $element)
+        {
+            if (isset($result))
+            {
+                $result .= $sep;
+            }
+            else
+            {
+                $result = '';
+            }
 
-      if ($key === 'key_args')
-      {
-        array_unshift($element, l10n(array_shift($element))); // translate the key
-        $result .= call_user_func_array('sprintf', $element);
-      }
-      else
-      {
-        $result .= l10n_args($element, $sep);
-      }
+            if ($key === 'key_args')
+            {
+                array_unshift($element, l10n(array_shift($element))); // translate the key
+                $result .= call_user_func_array('sprintf', $element);
+            }
+            else
+            {
+                $result .= l10n_args($element, $sep);
+            }
+        }
     }
-  }
-  else
-  {
-    fatal_error('l10n_args: Invalid arguments');
-  }
+    else
+    {
+        fatal_error('l10n_args: Invalid arguments');
+    }
 
-  return $result;
+    return $result;
 }
 
 /**
@@ -557,9 +552,9 @@ function l10n_args($key_args, $sep = "\n")
  */
 function get_themeconf($key)
 {
-  global $template;
+    global $template;
 
-  return $template->get_themeconf($key);
+    return $template->get_themeconf($key);
 }
 
 /**
@@ -569,18 +564,18 @@ function get_themeconf($key)
  */
 function get_webmaster_mail_address()
 {
-  global $conf;
+    global $conf;
 
-  $query = '
+    $query = '
 SELECT '.$conf['user_fields']['email'].'
-  FROM '.USERS_TABLE.'
-  WHERE '.$conf['user_fields']['id'].' = '.$conf['webmaster_id'].'
+    FROM '.USERS_TABLE.'
+    WHERE '.$conf['user_fields']['id'].' = '.$conf['webmaster_id'].'
 ;';
-  list($email) = pwg_db_fetch_row(pwg_query($query));
+    list($email) = pwg_db_fetch_row(pwg_query($query));
 
-  $email = trigger_change('get_webmaster_mail_address', $email);
+    $email = trigger_change('get_webmaster_mail_address', $email);
 
-  return $email;
+    return $email;
 }
 
 /**
@@ -589,38 +584,54 @@ SELECT '.$conf['user_fields']['email'].'
  * @param string $condition SQL condition
  * @return void
  */
-function load_conf_from_db($condition = '')
+function load_conf_from_db(Application $app, $condition = '')
 {
-  global $conf;
+    $conf = $app['conf']['db'];
+    $db   = $app['dbal'];
 
-  $query = '
-SELECT param, value
- FROM '.CONFIG_TABLE.'
- '.(!empty($condition) ? 'WHERE '.$condition : '').'
-;';
-  $result = pwg_query($query);
+    $qb = $db->createQueryBuilder();
+    $qb->select('param', 'value');
+    $qb->from($conf['tables']['config']);
 
-  if ((pwg_db_num_rows($result) == 0) and !empty($condition))
-  {
-    fatal_error('No configuration data');
-  }
-
-  while ($row = pwg_db_fetch_assoc($result))
-  {
-    $val = isset($row['value']) ? $row['value'] : '';
-    // If the field is true or false, the variable is transformed into a boolean value.
-    if ($val == 'true')
+    if (!empty($condition))
     {
-      $val = true;
+        $qb->where($condition);
     }
-    elseif ($val == 'false')
-    {
-      $val = false;
-    }
-    $conf[ $row['param'] ] = $val;
-  }
 
-  trigger_notify('load_conf', $condition);
+    $q   = $qb->execute();
+    $res = $q->fetchAll();
+
+    if (0 == count($res) and !empty($condition))
+    {
+        fatal_error('No configuration data');
+    }
+
+    $test = array();
+    foreach ($res as $row)
+    {
+        $val = isset($row['value']) ? $row['value'] : null;
+
+        // If the field is true or false,
+        // the variable is transformed into a boolean value.
+        switch (true)
+        {
+            case 'true' == $val:
+                $val = true;
+                break;
+            case 'false' == $val:
+                $val = false;
+                break;
+            case is_numeric($val):
+                $val = $val + 0;
+                break;
+            default:
+                break;
+        }
+
+        $test[$row['param']] = $val;
+    }
+
+    trigger_notify('load_conf', $condition);
 }
 
 /**
@@ -634,33 +645,33 @@ SELECT param, value
  */
 function conf_update_param($param, $value, $updateGlobal=false, $parser=null)
 {
-  if ($parser != null)
-  {
-    $dbValue = call_user_func($parser, $value);
-  }
-  else if (is_array($value) || is_object($value))
-  {
-    $dbValue = addslashes(serialize($value));
-  }
-  else
-  {
-    $dbValue = boolean_to_string($value);
-  }
+    if ($parser != null)
+    {
+        $dbValue = call_user_func($parser, $value);
+    }
+    else if (is_array($value) || is_object($value))
+    {
+        $dbValue = addslashes(serialize($value));
+    }
+    else
+    {
+        $dbValue = boolean_to_string($value);
+    }
 
-  $query = '
+    $query = '
 INSERT INTO
-  '.CONFIG_TABLE.' (param, value)
-  VALUES(\''.$param.'\', \''.$dbValue.'\')
-  ON DUPLICATE KEY UPDATE value = \''.$dbValue.'\'
+    '.CONFIG_TABLE.' (param, value)
+    VALUES(\''.$param.'\', \''.$dbValue.'\')
+    ON DUPLICATE KEY UPDATE value = \''.$dbValue.'\'
 ;';
 
-  pwg_query($query);
+    pwg_query($query);
 
-  if ($updateGlobal)
-  {
-    global $conf;
-    $conf[$param] = $value;
-  }
+    if ($updateGlobal)
+    {
+        global $conf;
+        $conf[$param] = $value;
+    }
 }
 
 /**
@@ -671,27 +682,27 @@ INSERT INTO
  */
 function conf_delete_param($params)
 {
-  global $conf;
+    global $conf;
 
-  if (!is_array($params))
-  {
-    $params = array($params);
-  }
-  if (empty($params))
-  {
-    return;
-  }
+    if (!is_array($params))
+    {
+        $params = array($params);
+    }
+    if (empty($params))
+    {
+        return;
+    }
 
-  $query = '
+    $query = '
 DELETE FROM '.CONFIG_TABLE.'
-  WHERE param IN(\''. implode('\',\'', $params) .'\')
+    WHERE param IN(\''. implode('\',\'', $params) .'\')
 ;';
-  pwg_query($query);
+    pwg_query($query);
 
-  foreach ($params as $param)
-  {
-    unset($conf[$param]);
-  }
+    foreach ($params as $param)
+    {
+        unset($conf[$param]);
+    }
 }
 
 /**
@@ -703,11 +714,11 @@ DELETE FROM '.CONFIG_TABLE.'
  */
 function safe_unserialize($value)
 {
-  if (is_string($value))
-  {
-    return unserialize($value);
-  }
-  return $value;
+    if (is_string($value))
+    {
+        return unserialize($value);
+    }
+    return $value;
 }
 
 /**
@@ -719,11 +730,11 @@ function safe_unserialize($value)
  */
 function safe_json_decode($value)
 {
-  if (is_string($value))
-  {
-    return json_decode($value, true);
-  }
-  return $value;
+    if (is_string($value))
+    {
+        return json_decode($value, true);
+    }
+    return $value;
 }
 
 /**
@@ -736,12 +747,12 @@ function safe_json_decode($value)
  */
 function prepend_append_array_items($array, $prepend_str, $append_str)
 {
-  array_walk(
-    $array,
-    create_function('&$s', '$s = "'.$prepend_str.'".$s."'.$append_str.'";')
-    );
+    array_walk(
+        $array,
+        create_function('&$s', '$s = "'.$prepend_str.'".$s."'.$append_str.'";')
+        );
 
-  return $array;
+    return $array;
 }
 
 /**
@@ -756,7 +767,7 @@ function prepend_append_array_items($array, $prepend_str, $append_str)
  */
 function simple_hash_from_query($query, $keyname, $valuename)
 {
-	return query2array($query, $keyname, $valuename);
+    return query2array($query, $keyname, $valuename);
 }
 
 /**
@@ -770,7 +781,7 @@ function simple_hash_from_query($query, $keyname, $valuename)
  */
 function hash_from_query($query, $keyname)
 {
-	return query2array($query, $keyname);
+    return query2array($query, $keyname);
 }
 
 /**
@@ -785,14 +796,14 @@ function hash_from_query($query, $keyname)
  */
 function array_from_query($query, $fieldname=false)
 {
-  if (false === $fieldname)
-  {
-		return query2array($query);
-  }
-  else
-  {
-		return query2array($query, null, $fieldname);
-  }
+    if (false === $fieldname)
+    {
+        return query2array($query);
+    }
+    else
+    {
+        return query2array($query, null, $fieldname);
+    }
 }
 
 /**
@@ -803,23 +814,23 @@ function array_from_query($query, $fieldname=false)
  */
 function script_basename()
 {
-  global $conf;
+    global $conf;
 
-  foreach (array('SCRIPT_NAME', 'SCRIPT_FILENAME', 'PHP_SELF') as $value)
-  {
-    if (!empty($_SERVER[$value]))
+    foreach (array('SCRIPT_NAME', 'SCRIPT_FILENAME', 'PHP_SELF') as $value)
     {
-      $filename = strtolower($_SERVER[$value]);
-      if ($conf['php_extension_in_urls'] and get_extension($filename)!=='php')
-        continue;
-      $basename = basename($filename, '.php');
-      if (!empty($basename))
-      {
-        return $basename;
-      }
+        if (!empty($_SERVER[$value]))
+        {
+            $filename = strtolower($_SERVER[$value]);
+            if ($conf['php_extension_in_urls'] and get_extension($filename)!=='php')
+                continue;
+            $basename = basename($filename, '.php');
+            if (!empty($basename))
+            {
+                return $basename;
+            }
+        }
     }
-  }
-  return '';
+    return '';
 }
 
 /**
@@ -830,22 +841,22 @@ function script_basename()
  */
 function get_filter_page_value($value_name)
 {
-  global $conf;
+    global $conf;
 
-  $page_name = script_basename();
+    $page_name = script_basename();
 
-  if (isset($conf['filter_pages'][$page_name][$value_name]))
-  {
-    return $conf['filter_pages'][$page_name][$value_name];
-  }
-  elseif (isset($conf['filter_pages']['default'][$value_name]))
-  {
-    return $conf['filter_pages']['default'][$value_name];
-  }
-  else
-  {
-    return null;
-  }
+    if (isset($conf['filter_pages'][$page_name][$value_name]))
+    {
+        return $conf['filter_pages'][$page_name][$value_name];
+    }
+    elseif (isset($conf['filter_pages']['default'][$value_name]))
+    {
+        return $conf['filter_pages']['default'][$value_name];
+    }
+    else
+    {
+        return null;
+    }
 }
 
 /**
@@ -854,12 +865,12 @@ function get_filter_page_value($value_name)
  */
 function get_pwg_charset()
 {
-  $pwg_charset = 'utf-8';
-  if (defined('PWG_CHARSET'))
-  {
-    $pwg_charset = PWG_CHARSET;
-  }
-  return $pwg_charset;
+    $pwg_charset = 'utf-8';
+    if (defined('PWG_CHARSET'))
+    {
+        $pwg_charset = PWG_CHARSET;
+    }
+    return $pwg_charset;
 }
 
 /**
@@ -872,21 +883,21 @@ function get_pwg_charset()
  */
 function get_parent_language($lang_id = null)
 {
-  if (empty($lang_id))
-  {
-    global $lang_info;
-    return !empty($lang_info['parent']) ? $lang_info['parent'] : null;
-  }
-  else
-  {
-    $f = PHPWG_ROOT_PATH.'language/'.$lang_id.'/common.lang.php';
-    if (file_exists($f))
+    if (empty($lang_id))
     {
-      include($f);
-      return !empty($lang_info['parent']) ? $lang_info['parent'] : null;
+        global $lang_info;
+        return !empty($lang_info['parent']) ? $lang_info['parent'] : null;
     }
-  }
-  return null;
+    else
+    {
+        $f = PHPWG_ROOT_PATH.'language/'.$lang_id.'/common.lang.php';
+        if (file_exists($f))
+        {
+            include($f);
+            return !empty($lang_info['parent']) ? $lang_info['parent'] : null;
+        }
+    }
+    return null;
 }
 
 /**
@@ -908,123 +919,123 @@ function get_parent_language($lang_id = null)
  */
 function load_language($filename, $dirname = '', $options = array())
 {
-  global $user, $language_files;
+    global $user, $language_files;
 
-  // keep trace of plugins loaded files for switch_lang_to() function
-  if (!empty($dirname) && !empty($filename) && !@$options['return']
-    && !isset($language_files[$dirname][$filename]))
-  {
-    $language_files[$dirname][$filename] = $options;
-  }
-
-  if (!@$options['return'])
-  {
-    $filename .= '.php';
-  }
-  if (empty($dirname))
-  {
-    $dirname = PHPWG_ROOT_PATH;
-  }
-  $dirname .= 'language/';
-
-  $default_language = defined('PHPWG_INSTALLED') and !defined('UPGRADES_PATH') ?
-      get_default_language() : PHPWG_DEFAULT_LANGUAGE;
-
-  // construct list of potential languages
-  $languages = array();
-  if (!empty($options['language']))
-  { // explicit language
-    $languages[] = $options['language'];
-  }
-  if (!empty($user['language']))
-  { // use language
-    $languages[] = $user['language'];
-  }
-  if (($parent = get_parent_language()) != null)
-  { // parent language
-    // this is only for when the "child" language is missing
-    $languages[] = $parent;
-  }
-  if (isset($options['force_fallback']))
-  { // fallback language
-    // this is only for when the main language is missing
-    if ($options['force_fallback'] === true)
+    // keep trace of plugins loaded files for switch_lang_to() function
+    if (!empty($dirname) && !empty($filename) && !@$options['return']
+        && !isset($language_files[$dirname][$filename]))
     {
-      $options['force_fallback'] = $default_language;
+        $language_files[$dirname][$filename] = $options;
     }
-    $languages[] = $options['force_fallback'];
-  }
-  if (!@$options['no_fallback'])
-  { // default language
-    $languages[] = $default_language;
-  }
 
-  $languages = array_unique($languages);
-
-  // find first existing
-  $source_file       = '';
-  $selected_language = '';
-  foreach ($languages as $language)
-  {
-    $f = @$options['local'] ?
-      $dirname.$language.'.'.$filename:
-      $dirname.$language.'/'.$filename;
-
-    if (file_exists($f))
-    {
-      $selected_language = $language;
-      $source_file = $f;
-      break;
-    }
-  }
-
-  if (!empty($source_file))
-  {
     if (!@$options['return'])
     {
-      // load forced fallback
-      if (isset($options['force_fallback']) && $options['force_fallback'] != $selected_language)
-      {
-        @include(str_replace($selected_language, $options['force_fallback'], $source_file));
-      }
-
-      // load language content
-      @include($source_file);
-      $load_lang = @$lang;
-      $load_lang_info = @$lang_info;
-
-      // access already existing values
-      global $lang, $lang_info;
-      if (!isset($lang)) $lang = array();
-      if (!isset($lang_info)) $lang_info = array();
-
-      // load parent language content directly in global
-      if (!empty($load_lang_info['parent']))
-        $parent_language = $load_lang_info['parent'];
-      else if (!empty($lang_info['parent']))
-        $parent_language = $lang_info['parent'];
-      else
-        $parent_language = null;
-
-      if (!empty($parent_language) && $parent_language != $selected_language)
-      {
-        @include(str_replace($selected_language, $parent_language, $source_file));
-      }
-
-      // merge contents
-      $lang = array_merge($lang, (array)$load_lang);
-      $lang_info = array_merge($lang_info, (array)$load_lang_info);
-      return true;
+        $filename .= '.php';
     }
-    else
+    if (empty($dirname))
     {
-      $content = @file_get_contents($source_file);
-      //Note: target charset is always utf-8 $content = convert_charset($content, 'utf-8', $target_charset);
-      return $content;
+        $dirname = PHPWG_ROOT_PATH;
     }
-  }
+    $dirname .= 'language/';
 
-  return false;
+    $default_language = defined('PHPWG_INSTALLED') and !defined('UPGRADES_PATH') ?
+            get_default_language() : PHPWG_DEFAULT_LANGUAGE;
+
+    // construct list of potential languages
+    $languages = array();
+    if (!empty($options['language']))
+    { // explicit language
+        $languages[] = $options['language'];
+    }
+    if (!empty($user['language']))
+    { // use language
+        $languages[] = $user['language'];
+    }
+    if (($parent = get_parent_language()) != null)
+    { // parent language
+        // this is only for when the "child" language is missing
+        $languages[] = $parent;
+    }
+    if (isset($options['force_fallback']))
+    { // fallback language
+        // this is only for when the main language is missing
+        if ($options['force_fallback'] === true)
+        {
+            $options['force_fallback'] = $default_language;
+        }
+        $languages[] = $options['force_fallback'];
+    }
+    if (!@$options['no_fallback'])
+    { // default language
+        $languages[] = $default_language;
+    }
+
+    $languages = array_unique($languages);
+
+    // find first existing
+    $source_file       = '';
+    $selected_language = '';
+    foreach ($languages as $language)
+    {
+        $f = @$options['local'] ?
+            $dirname.$language.'.'.$filename:
+            $dirname.$language.'/'.$filename;
+
+        if (file_exists($f))
+        {
+            $selected_language = $language;
+            $source_file = $f;
+            break;
+        }
+    }
+
+    if (!empty($source_file))
+    {
+        if (!@$options['return'])
+        {
+            // load forced fallback
+            if (isset($options['force_fallback']) && $options['force_fallback'] != $selected_language)
+            {
+                @include(str_replace($selected_language, $options['force_fallback'], $source_file));
+            }
+
+            // load language content
+            @include($source_file);
+            $load_lang = @$lang;
+            $load_lang_info = @$lang_info;
+
+            // access already existing values
+            global $lang, $lang_info;
+            if (!isset($lang)) $lang = array();
+            if (!isset($lang_info)) $lang_info = array();
+
+            // load parent language content directly in global
+            if (!empty($load_lang_info['parent']))
+                $parent_language = $load_lang_info['parent'];
+            else if (!empty($lang_info['parent']))
+                $parent_language = $lang_info['parent'];
+            else
+                $parent_language = null;
+
+            if (!empty($parent_language) && $parent_language != $selected_language)
+            {
+                @include(str_replace($selected_language, $parent_language, $source_file));
+            }
+
+            // merge contents
+            $lang = array_merge($lang, (array)$load_lang);
+            $lang_info = array_merge($lang_info, (array)$load_lang_info);
+            return true;
+        }
+        else
+        {
+            $content = @file_get_contents($source_file);
+            //Note: target charset is always utf-8 $content = convert_charset($content, 'utf-8', $target_charset);
+            return $content;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -1036,25 +1047,25 @@ function load_language($filename, $dirname = '', $options = array())
  */
 function convert_charset($str, $source_charset, $dest_charset)
 {
-  if ($source_charset==$dest_charset)
-    return $str;
-  if ($source_charset=='iso-8859-1' and $dest_charset=='utf-8')
-  {
-    return utf8_encode($str);
-  }
-  if ($source_charset=='utf-8' and $dest_charset=='iso-8859-1')
-  {
-    return utf8_decode($str);
-  }
-  if (function_exists('iconv'))
-  {
-    return iconv($source_charset, $dest_charset, $str);
-  }
-  if (function_exists('mb_convert_encoding'))
-  {
-    return mb_convert_encoding($str, $dest_charset, $source_charset);
-  }
-  return $str; // TODO
+    if ($source_charset==$dest_charset)
+        return $str;
+    if ($source_charset=='iso-8859-1' and $dest_charset=='utf-8')
+    {
+        return utf8_encode($str);
+    }
+    if ($source_charset=='utf-8' and $dest_charset=='iso-8859-1')
+    {
+        return utf8_decode($str);
+    }
+    if (function_exists('iconv'))
+    {
+        return iconv($source_charset, $dest_charset, $str);
+    }
+    if (function_exists('mb_convert_encoding'))
+    {
+        return mb_convert_encoding($str, $dest_charset, $source_charset);
+    }
+    return $str; // TODO
 }
 
 /**
@@ -1064,11 +1075,11 @@ function convert_charset($str, $source_charset, $dest_charset)
  */
 function secure_directory($dir)
 {
-  $file = $dir.'/index.htm';
-  if (!file_exists($file))
-  {
-    @file_put_contents($file, 'Not allowed!');
-  }
+    $file = $dir.'/index.htm';
+    if (!file_exists($file))
+    {
+        @file_put_contents($file, 'Not allowed!');
+    }
 }
 
 /**
@@ -1080,13 +1091,13 @@ function secure_directory($dir)
  */
 function get_ephemeral_key($valid_after_seconds, $aditionnal_data_to_hash = '')
 {
-	global $conf;
-	$time = round(microtime(true), 1);
-	return $time.':'.$valid_after_seconds.':'
-		.hash_hmac(
-			'md5',
-			$time.substr($_SERVER['REMOTE_ADDR'],0,5).$valid_after_seconds.$aditionnal_data_to_hash,
-			$conf['secret_key']);
+    global $conf;
+    $time = round(microtime(true), 1);
+    return $time.':'.$valid_after_seconds.':'
+        .hash_hmac(
+            'md5',
+            $time.substr($_SERVER['REMOTE_ADDR'],0,5).$valid_after_seconds.$aditionnal_data_to_hash,
+            $conf['secret_key']);
 }
 
 /**
@@ -1098,20 +1109,20 @@ function get_ephemeral_key($valid_after_seconds, $aditionnal_data_to_hash = '')
  */
 function verify_ephemeral_key($key, $aditionnal_data_to_hash = '')
 {
-	global $conf;
-	$time = microtime(true);
-	$key = explode( ':', @$key );
-	if ( count($key)!=3
-		or $key[0]>$time-(float)$key[1] // page must have been retrieved more than X sec ago
-		or $key[0]<$time-3600 // 60 minutes expiration
-		or hash_hmac(
-			  'md5', $key[0].substr($_SERVER['REMOTE_ADDR'],0,5).$key[1].$aditionnal_data_to_hash, $conf['secret_key']
-			) != $key[2]
-	  )
-	{
-		return false;
-	}
-	return true;
+    global $conf;
+    $time = microtime(true);
+    $key = explode( ':', @$key );
+    if ( count($key)!=3
+        or $key[0]>$time-(float)$key[1] // page must have been retrieved more than X sec ago
+        or $key[0]<$time-3600 // 60 minutes expiration
+        or hash_hmac(
+                'md5', $key[0].substr($_SERVER['REMOTE_ADDR'],0,5).$key[1].$aditionnal_data_to_hash, $conf['secret_key']
+            ) != $key[2]
+        )
+    {
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -1127,55 +1138,55 @@ function verify_ephemeral_key($key, $aditionnal_data_to_hash = '')
  */
 function create_navigation_bar($url, $nb_element, $start, $nb_element_page, $clean_url = false, $param_name='start')
 {
-  global $conf;
+    global $conf;
 
-  $navbar = array();
-  $pages_around = $conf['paginate_pages_around'];
-  $start_str = $clean_url ? '/'.$param_name.'-' : (strpos($url, '?')===false ? '?':'&amp;').$param_name.'=';
+    $navbar = array();
+    $pages_around = $conf['paginate_pages_around'];
+    $start_str = $clean_url ? '/'.$param_name.'-' : (strpos($url, '?')===false ? '?':'&amp;').$param_name.'=';
 
-  if (!isset($start) or !is_numeric($start) or (is_numeric($start) and $start < 0))
-  {
-    $start = 0;
-  }
-
-  // navigation bar useful only if more than one page to display !
-  if ($nb_element > $nb_element_page)
-  {
-    $url_start = $url.$start_str;
-
-    $cur_page = $navbar['CURRENT_PAGE'] = $start / $nb_element_page + 1;
-    $maximum = ceil($nb_element / $nb_element_page);
-
-    $start = $nb_element_page * round( $start / $nb_element_page );
-    $previous = $start - $nb_element_page;
-    $next = $start + $nb_element_page;
-    $last = ($maximum - 1) * $nb_element_page;
-
-    // link to first page and previous page?
-    if ($cur_page != 1)
+    if (!isset($start) or !is_numeric($start) or (is_numeric($start) and $start < 0))
     {
-      $navbar['URL_FIRST'] = $url;
-      $navbar['URL_PREV'] = $previous > 0 ? $url_start.$previous : $url;
-    }
-    // link on next page and last page?
-    if ($cur_page != $maximum)
-    {
-      $navbar['URL_NEXT'] = $url_start.($next < $last ? $next : $last);
-      $navbar['URL_LAST'] = $url_start.$last;
+        $start = 0;
     }
 
-    // pages to display
-    $navbar['pages'] = array();
-    $navbar['pages'][1] = $url;
-    for ($i = max( floor($cur_page) - $pages_around , 2), $stop = min( ceil($cur_page) + $pages_around + 1, $maximum);
-         $i < $stop; $i++)
+    // navigation bar useful only if more than one page to display !
+    if ($nb_element > $nb_element_page)
     {
-      $navbar['pages'][$i] = $url.$start_str.(($i - 1) * $nb_element_page);
+        $url_start = $url.$start_str;
+
+        $cur_page = $navbar['CURRENT_PAGE'] = $start / $nb_element_page + 1;
+        $maximum = ceil($nb_element / $nb_element_page);
+
+        $start = $nb_element_page * round( $start / $nb_element_page );
+        $previous = $start - $nb_element_page;
+        $next = $start + $nb_element_page;
+        $last = ($maximum - 1) * $nb_element_page;
+
+        // link to first page and previous page?
+        if ($cur_page != 1)
+        {
+            $navbar['URL_FIRST'] = $url;
+            $navbar['URL_PREV'] = $previous > 0 ? $url_start.$previous : $url;
+        }
+        // link on next page and last page?
+        if ($cur_page != $maximum)
+        {
+            $navbar['URL_NEXT'] = $url_start.($next < $last ? $next : $last);
+            $navbar['URL_LAST'] = $url_start.$last;
+        }
+
+        // pages to display
+        $navbar['pages'] = array();
+        $navbar['pages'][1] = $url;
+        for ($i = max( floor($cur_page) - $pages_around , 2), $stop = min( ceil($cur_page) + $pages_around + 1, $maximum);
+                 $i < $stop; $i++)
+        {
+            $navbar['pages'][$i] = $url.$start_str.(($i - 1) * $nb_element_page);
+        }
+        $navbar['pages'][$maximum] = $url_start.$last;
+        $navbar['NB_PAGE']=$maximum;
     }
-    $navbar['pages'][$maximum] = $url_start.$last;
-    $navbar['NB_PAGE']=$maximum;
-  }
-  return $navbar;
+    return $navbar;
 }
 
 /**
@@ -1187,40 +1198,40 @@ function create_navigation_bar($url, $nb_element, $start, $nb_element_page, $cle
  */
 function get_icon($date, $is_child_date = false)
 {
-  global $cache, $user;
+    global $cache, $user;
 
-  if (empty($date))
-  {
-    return false;
-  }
+    if (empty($date))
+    {
+        return false;
+    }
 
-  if (!isset($cache['get_icon']['title']))
-  {
-    $cache['get_icon']['title'] = l10n(
-      'photos posted during the last %d days',
-      $user['recent_period']
-      );
-  }
+    if (!isset($cache['get_icon']['title']))
+    {
+        $cache['get_icon']['title'] = l10n(
+            'photos posted during the last %d days',
+            $user['recent_period']
+            );
+    }
 
-  $icon = array(
-    'TITLE' => $cache['get_icon']['title'],
-    'IS_CHILD_DATE' => $is_child_date,
-    );
+    $icon = array(
+        'TITLE' => $cache['get_icon']['title'],
+        'IS_CHILD_DATE' => $is_child_date,
+        );
 
-  if (isset($cache['get_icon'][$date]))
-  {
+    if (isset($cache['get_icon'][$date]))
+    {
+        return $cache['get_icon'][$date] ? $icon : array();
+    }
+
+    if (!isset($cache['get_icon']['sql_recent_date']))
+    {
+        // Use MySql date in order to standardize all recent "actions/queries"
+        $cache['get_icon']['sql_recent_date'] = pwg_db_get_recent_period($user['recent_period']);
+    }
+
+    $cache['get_icon'][$date] = $date > $cache['get_icon']['sql_recent_date'];
+
     return $cache['get_icon'][$date] ? $icon : array();
-  }
-
-  if (!isset($cache['get_icon']['sql_recent_date']))
-  {
-    // Use MySql date in order to standardize all recent "actions/queries"
-    $cache['get_icon']['sql_recent_date'] = pwg_db_get_recent_period($user['recent_period']);
-  }
-
-  $cache['get_icon'][$date] = $date > $cache['get_icon']['sql_recent_date'];
-
-  return $cache['get_icon'][$date] ? $icon : array();
 }
 
 /**
@@ -1232,17 +1243,17 @@ function get_icon($date, $is_child_date = false)
  */
 function check_pwg_token()
 {
-  if (!empty($_REQUEST['pwg_token']))
-  {
-    if (get_pwg_token() != $_REQUEST['pwg_token'])
+    if (!empty($_REQUEST['pwg_token']))
     {
-      access_denied();
+        if (get_pwg_token() != $_REQUEST['pwg_token'])
+        {
+            access_denied();
+        }
     }
-  }
-  else
-  {
-    bad_request('missing token');
-  }
+    else
+    {
+        bad_request('missing token');
+    }
 }
 
 /**
@@ -1252,9 +1263,9 @@ function check_pwg_token()
  */
 function get_pwg_token()
 {
-  global $conf;
+    global $conf;
 
-  return hash_hmac('md5', session_id(), $conf['secret_key']);
+    return hash_hmac('md5', session_id(), $conf['secret_key']);
 }
 
 /*
@@ -1269,44 +1280,44 @@ function get_pwg_token()
  */
 function check_input_parameter($param_name, $param_array, $is_array, $pattern, $mandatory=false)
 {
-  $param_value = null;
-  if (isset($param_array[$param_name]))
-  {
-    $param_value = $param_array[$param_name];
-  }
-
-  // it's ok if the input parameter is null
-  if (empty($param_value))
-  {
-    if ($mandatory)
+    $param_value = null;
+    if (isset($param_array[$param_name]))
     {
-      fatal_error('[Hacking attempt] the input parameter "'.$param_name.'" is not valid');
-    }
-    return true;
-  }
-
-  if ($is_array)
-  {
-    if (!is_array($param_value))
-    {
-      fatal_error('[Hacking attempt] the input parameter "'.$param_name.'" should be an array');
+        $param_value = $param_array[$param_name];
     }
 
-    foreach ($param_value as $key => $item_to_check)
+    // it's ok if the input parameter is null
+    if (empty($param_value))
     {
-      if (!preg_match(PATTERN_ID, $key) or !preg_match($pattern, $item_to_check))
-      {
-        fatal_error('[Hacking attempt] an item is not valid in input parameter "'.$param_name.'"');
-      }
+        if ($mandatory)
+        {
+            fatal_error('[Hacking attempt] the input parameter "'.$param_name.'" is not valid');
+        }
+        return true;
     }
-  }
-  else
-  {
-    if (!preg_match($pattern, $param_value))
+
+    if ($is_array)
     {
-      fatal_error('[Hacking attempt] the input parameter "'.$param_name.'" is not valid');
+        if (!is_array($param_value))
+        {
+            fatal_error('[Hacking attempt] the input parameter "'.$param_name.'" should be an array');
+        }
+
+        foreach ($param_value as $key => $item_to_check)
+        {
+            if (!preg_match(PATTERN_ID, $key) or !preg_match($pattern, $item_to_check))
+            {
+                fatal_error('[Hacking attempt] an item is not valid in input parameter "'.$param_name.'"');
+            }
+        }
     }
-  }
+    else
+    {
+        if (!preg_match($pattern, $param_value))
+        {
+            fatal_error('[Hacking attempt] the input parameter "'.$param_name.'" is not valid');
+        }
+    }
 }
 
 /**
@@ -1316,27 +1327,27 @@ function check_input_parameter($param_name, $param_array, $is_array, $pattern, $
  */
 function get_privacy_level_options()
 {
-  global $conf;
+    global $conf;
 
-  $options = array();
-  $label = '';
-  foreach (array_reverse($conf['available_permission_levels']) as $level)
-  {
-    if (0 == $level)
+    $options = array();
+    $label = '';
+    foreach (array_reverse($conf['available_permission_levels']) as $level)
     {
-      $label = l10n('Everybody');
+        if (0 == $level)
+        {
+            $label = l10n('Everybody');
+        }
+        else
+        {
+            if (strlen($label))
+            {
+                $label .= ', ';
+            }
+            $label .= l10n( sprintf('Level %d', $level) );
+        }
+        $options[$level] = $label;
     }
-    else
-    {
-      if (strlen($label))
-      {
-        $label .= ', ';
-      }
-      $label .= l10n( sprintf('Level %d', $level) );
-    }
-    $options[$level] = $label;
-  }
-  return $options;
+    return $options;
 }
 
 
@@ -1348,7 +1359,7 @@ function get_privacy_level_options()
  */
 function get_branch_from_version($version)
 {
-  return implode('.', array_slice(explode('.', $version), 0, 2));
+    return implode('.', array_slice(explode('.', $version), 0, 2));
 }
 
 /**
@@ -1358,28 +1369,27 @@ function get_branch_from_version($version)
  */
 function get_device()
 {
-  $device = pwg_get_session_var('device');
+    $device = pwg_get_session_var('device');
 
-  if (is_null($device))
-  {
-    include_once(PHPWG_ROOT_PATH.'include/mdetect.php');
-    $uagent_obj = new uagent_info();
-    if ($uagent_obj->DetectSmartphone())
+    if (is_null($device))
     {
-      $device = 'mobile';
+        $agent = new UagentInfo();
+        if ($agent->DetectSmartphone())
+        {
+            $device = 'mobile';
+        }
+        elseif ($agent->DetectTierTablet())
+        {
+            $device = 'tablet';
+        }
+        else
+        {
+            $device = 'desktop';
+        }
+        pwg_set_session_var('device', $device);
     }
-    elseif ($uagent_obj->DetectTierTablet())
-    {
-      $device = 'tablet';
-    }
-    else
-    {
-      $device = 'desktop';
-    }
-    pwg_set_session_var('device', $device);
-  }
 
-  return $device;
+    return $device;
 }
 
 /**
@@ -1389,30 +1399,30 @@ function get_device()
  */
 function mobile_theme()
 {
-  global $conf;
+    global $conf;
 
-  if (empty($conf['mobile_theme']))
-  {
-    return false;
-  }
+    if (empty($conf['mobile_theme']))
+    {
+        return false;
+    }
 
-  if (isset($_GET['mobile']))
-  {
-    $is_mobile_theme = get_boolean($_GET['mobile']);
-    pwg_set_session_var('mobile_theme', $is_mobile_theme);
-  }
-  else
-  {
-    $is_mobile_theme = pwg_get_session_var('mobile_theme');
-  }
+    if (isset($_GET['mobile']))
+    {
+        $is_mobile_theme = get_boolean($_GET['mobile']);
+        pwg_set_session_var('mobile_theme', $is_mobile_theme);
+    }
+    else
+    {
+        $is_mobile_theme = pwg_get_session_var('mobile_theme');
+    }
 
-  if (is_null($is_mobile_theme))
-  {
-    $is_mobile_theme = (get_device() == 'mobile');
-    pwg_set_session_var('mobile_theme', $is_mobile_theme);
-  }
+    if (is_null($is_mobile_theme))
+    {
+        $is_mobile_theme = (get_device() == 'mobile');
+        pwg_set_session_var('mobile_theme', $is_mobile_theme);
+    }
 
-  return $is_mobile_theme;
+    return $is_mobile_theme;
 }
 
 /**
@@ -1423,7 +1433,7 @@ function mobile_theme()
  */
 function url_check_format($url)
 {
-  return filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_SCHEME_REQUIRED | FILTER_FLAG_HOST_REQUIRED)!==false;
+    return filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_SCHEME_REQUIRED | FILTER_FLAG_HOST_REQUIRED)!==false;
 }
 
 /**
@@ -1434,7 +1444,7 @@ function url_check_format($url)
  */
 function email_check_format($mail_address)
 {
-  return filter_var($mail_address, FILTER_VALIDATE_EMAIL)!==false;
+    return filter_var($mail_address, FILTER_VALIDATE_EMAIL)!==false;
 }
 
 /**
@@ -1444,37 +1454,37 @@ function email_check_format($mail_address)
  */
 function get_nb_available_comments()
 {
-  global $user;
-  if (!isset($user['nb_available_comments']))
-  {
-    $where = array();
-    if (!is_admin())
-      $where[] = 'validated=\'true\'';
-    $where[] = get_sql_condition_FandF
-      (
-        array
-          (
-            'forbidden_categories' => 'category_id',
-            'forbidden_images' => 'ic.image_id'
-          ),
-        '', true
-      );
+    global $user;
+    if (!isset($user['nb_available_comments']))
+    {
+        $where = array();
+        if (!is_admin())
+            $where[] = 'validated=\'true\'';
+        $where[] = get_sql_condition_FandF
+            (
+                array
+                    (
+                        'forbidden_categories' => 'category_id',
+                        'forbidden_images' => 'ic.image_id'
+                    ),
+                '', true
+            );
 
-    $query = '
+        $query = '
 SELECT COUNT(DISTINCT(com.id))
-  FROM '.IMAGE_CATEGORY_TABLE.' AS ic
-    INNER JOIN '.COMMENTS_TABLE.' AS com
-    ON ic.image_id = com.image_id
-  WHERE '.implode('
-    AND ', $where);
-    list($user['nb_available_comments']) = pwg_db_fetch_row(pwg_query($query));
+    FROM '.IMAGE_CATEGORY_TABLE.' AS ic
+        INNER JOIN '.COMMENTS_TABLE.' AS com
+        ON ic.image_id = com.image_id
+    WHERE '.implode('
+        AND ', $where);
+        list($user['nb_available_comments']) = pwg_db_fetch_row(pwg_query($query));
 
-    single_update(USER_CACHE_TABLE,
-      array('nb_available_comments'=>$user['nb_available_comments']),
-      array('user_id'=>$user['id'])
-      );
-  }
-  return $user['nb_available_comments'];
+        single_update(USER_CACHE_TABLE,
+            array('nb_available_comments'=>$user['nb_available_comments']),
+            array('user_id'=>$user['id'])
+            );
+    }
+    return $user['nb_available_comments'];
 }
 
 /**
@@ -1489,22 +1499,22 @@ SELECT COUNT(DISTINCT(com.id))
  */
 function safe_version_compare($a, $b, $op=null)
 {
-  $replace_chars = create_function('$m', 'return ord(strtolower($m[1]));');
+    $replace_chars = create_function('$m', 'return ord(strtolower($m[1]));');
 
-  // add dot before groups of letters (version_compare does the same thing)
-  $a = preg_replace('#([0-9]+)([a-z]+)#i', '$1.$2', $a);
-  $b = preg_replace('#([0-9]+)([a-z]+)#i', '$1.$2', $b);
+    // add dot before groups of letters (version_compare does the same thing)
+    $a = preg_replace('#([0-9]+)([a-z]+)#i', '$1.$2', $a);
+    $b = preg_replace('#([0-9]+)([a-z]+)#i', '$1.$2', $b);
 
-  // apply ord() to any single letter
-  $a = preg_replace_callback('#\b([a-z]{1})\b#i', $replace_chars, $a);
-  $b = preg_replace_callback('#\b([a-z]{1})\b#i', $replace_chars, $b);
+    // apply ord() to any single letter
+    $a = preg_replace_callback('#\b([a-z]{1})\b#i', $replace_chars, $a);
+    $b = preg_replace_callback('#\b([a-z]{1})\b#i', $replace_chars, $b);
 
-  if (empty($op))
-  {
-    return version_compare($a, $b);
-  }
-  else
-  {
-    return version_compare($a, $b, $op);
-  }
+    if (empty($op))
+    {
+        return version_compare($a, $b);
+    }
+    else
+    {
+        return version_compare($a, $b, $op);
+    }
 }

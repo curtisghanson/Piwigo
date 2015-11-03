@@ -1,33 +1,9 @@
 <?php
-// +-----------------------------------------------------------------------+
-// | Piwigo - a PHP based photo gallery                                    |
-// +-----------------------------------------------------------------------+
-// | Copyright(C) 2008-2014 Piwigo Team                  http://piwigo.org |
-// | Copyright(C) 2003-2008 PhpWebGallery Team    http://phpwebgallery.net |
-// | Copyright(C) 2002-2003 Pierrick LE GALL   http://le-gall.net/pierrick |
-// +-----------------------------------------------------------------------+
-// | This program is free software; you can redistribute it and/or modify  |
-// | it under the terms of the GNU General Public License as published by  |
-// | the Free Software Foundation                                          |
-// |                                                                       |
-// | This program is distributed in the hope that it will be useful, but   |
-// | WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |
-// | General Public License for more details.                              |
-// |                                                                       |
-// | You should have received a copy of the GNU General Public License     |
-// | along with this program; if not, write to the Free Software           |
-// | Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, |
-// | USA.                                                                  |
-// +-----------------------------------------------------------------------+
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 /**
  * @package functions\admin\metadata
  */
-
-
-include_once(PHPWG_ROOT_PATH.'/include/functions_metadata.inc.php');
-
 
 /**
  * Returns IPTC metadata to sync from a file, depending on IPTC mapping.
@@ -102,30 +78,32 @@ function get_sync_exif_data($file)
 {
   global $conf;
 
-  $exif = get_exif_data($file, $conf['use_exif_mapping']);
+  $exif = new Exif();
+  $data = $exif->getData($file, $conf['use_exif_mapping']);
 
-  foreach ($exif as $pwg_key => $value)
+  foreach ($data as $key => $value)
   {
-    if (in_array($pwg_key, array('date_creation', 'date_available')))
+    if (in_array($key, array('date_creation', 'date_available')))
     {
       if (preg_match('/^(\d{4}).(\d{2}).(\d{2}) (\d{2}).(\d{2}).(\d{2})/', $value, $matches))
       {
-        $exif[$pwg_key] = $matches[1].'-'.$matches[2].'-'.$matches[3].' '.$matches[4].':'.$matches[5].':'.$matches[6];
+        $data[$key] = $matches[1].'-'.$matches[2].'-'.$matches[3].' '.$matches[4].':'.$matches[5].':'.$matches[6];
       }
       elseif (preg_match('/^(\d{4}).(\d{2}).(\d{2})/', $value, $matches))
       {
-        $exif[$pwg_key] = $matches[1].'-'.$matches[2].'-'.$matches[3];
+        $data[$key] = $matches[1].'-'.$matches[2].'-'.$matches[3];
       }
       else
       {
-        unset($exif[$pwg_key]);
+        unset($data[$key]);
+
         continue;
       }
     }
-    $exif[$pwg_key] = addslashes($exif[$pwg_key]);
+    $data[$key] = addslashes($data[$key]);
   }
 
-  return $exif;
+  return $data;
 }
 
 /**
@@ -350,5 +328,3 @@ SELECT id, path, representative_ext
 ;';
   return hash_from_query($query, 'id');
 }
-
-?>

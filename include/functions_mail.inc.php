@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 
+use PHPMailer\PHPMailer;
+
 /**
  * Returns the name of the mail sender
  *
@@ -278,7 +280,7 @@ function switch_lang_to($language)
     // No test admin because script is checked admin (user selected no)
     // Translations are in admin file too
     load_language('admin.lang', '', array('language'=>$language) );
-    
+
     // Reload all plugins files (see load_language declaration)
     if (!empty($language_files))
     {
@@ -291,7 +293,7 @@ function switch_lang_to($language)
         }
       }
     }
-    
+
     trigger_notify('loading_lang');
     load_language('lang', PHPWG_ROOT_PATH.PWG_LOCAL_DIR,
       array('language'=>$language, 'no_fallback'=>true, 'local'=>true)
@@ -450,7 +452,7 @@ SELECT
  * @return boolean
  */
 function pwg_mail_group($group_id, $args=array(), $tpl=array())
-{  
+{
   if (empty($group_id) or ( empty($args['content']) and empty($tpl) ))
   {
     return false;
@@ -559,8 +561,6 @@ function pwg_mail($to, $args=array(), $tpl=array())
     $conf_mail = get_mail_configuration();
   }
 
-  include_once(PHPWG_ROOT_PATH.'include/phpmailer/class.phpmailer.php');
-
   $mail = new PHPMailer;
 
   foreach (get_clean_recipients_list($to) as $recipient)
@@ -570,7 +570,7 @@ function pwg_mail($to, $args=array(), $tpl=array())
 
   $mail->WordWrap = 76;
   $mail->CharSet = 'UTF-8';
-  
+
   // Compute root_path in order have complete path
   set_make_full_url();
 
@@ -633,7 +633,7 @@ function pwg_mail($to, $args=array(), $tpl=array())
   {
     $args['content'] = '';
   }
-  
+
   // try to decompose subject like "[....] ...."
   if (!isset($args['mail_title']) and !isset($args['mail_subtitle']))
   {
@@ -710,7 +710,7 @@ function pwg_mail($to, $args=array(), $tpl=array())
         }
       }
     }
-    
+
     $template = &$conf_mail[$cache_key]['theme'];
     $template->assign(
       array(
@@ -788,7 +788,7 @@ function pwg_mail($to, $args=array(), $tpl=array())
   {
     $mail->isHTML(true);
     $mail->Body = move_css_to_body($contents['text/html']);
-    
+
     if (isset($contents['text/plain']))
     {
       $mail->AltBody = $contents['text/plain'];
@@ -817,7 +817,7 @@ function pwg_mail($to, $args=array(), $tpl=array())
 
     // enables SMTP debug information (for testing) 2 - debug, 0 - no message
     $mail->SMTPDebug = 0;
-    
+
     $mail->Host = $smtp_host;
     $mail->Port = $smtp_port;
 
@@ -825,7 +825,7 @@ function pwg_mail($to, $args=array(), $tpl=array())
     {
       $mail->SMTPSecure = $conf_mail['smtp_secure'];
     }
-    
+
     if (!empty($conf_mail['smtp_user']))
     {
       $mail->SMTPAuth = true;
@@ -862,7 +862,7 @@ function pwg_send_mail($result, $to, $subject, $content, $headers)
   {
     trigger_error('pwg_send_mail function is deprecated', E_USER_NOTICE);
   }
-  
+
   if (!$result)
   {
     return pwg_mail($to, array(
@@ -887,7 +887,7 @@ function pwg_send_mail($result, $to, $subject, $content, $headers)
 function move_css_to_body($content)
 {
     $e = new Piwigo\Asset\Emogrifier($content);
-  
+
     return @$e->emogrify();
 }
 
@@ -901,7 +901,7 @@ function move_css_to_body($content)
 function pwg_send_mail_test($success, $mail, $args)
 {
   global $conf, $user, $lang_info;
-  
+
   $dir = PHPWG_ROOT_PATH.$conf['data_location'].'tmp';
   if (mkgetdir($dir, MKGETDIR_DEFAULT&~MKGETDIR_DIE_ON_ERROR))
   {
@@ -914,7 +914,7 @@ function pwg_send_mail_test($success, $mail, $args)
     {
       $filename .= '.html';
     }
-    
+
     $file = fopen($filename, 'w+');
     if (!$success)
     {

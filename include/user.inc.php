@@ -18,7 +18,7 @@ if (isset($_COOKIE[session_name()]))
 }
 
 // Now check the auto-login
-if ( $user['id']==$conf['guest_id'] )
+if ( $user['id'] == $conf['guest_id'] )
 {
   auto_login();
 }

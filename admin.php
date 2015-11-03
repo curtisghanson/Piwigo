@@ -8,21 +8,7 @@
 require_once __DIR__ . '/vendor/autoload.php';
 
 use Piwigo\Controller\AdminController;
-use Doctrine\DBAL\Configuration as DbalConfiguration;
-use Doctrine\DBAL\DriverManager as DriverManager;
 use Piwigo\Security\Authorization;
-
-$dbConfig   = new DbalConfiguration();
-
-$connParams = array(
-    'dbname'   => $configs['database']['name'],
-    'user'     => $configs['database']['user'],
-    'password' => $configs['database']['pass'],
-    'host'     => $configs['database']['host'],
-    'driver'   => $configs['database']['driver'],
-);
-
-$conn = DriverManager::getConnection($connParams, $dbConfig);
 
 $controller = new AdminController();
 $controller->indexAction();

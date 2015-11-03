@@ -1,6 +1,7 @@
 <?php
 namespace Piwigo\Derivative;
 
+use Piwigo\Application;
 use Piwigo\Derivative\WatermarkParams;
 use Piwigo\Derivative\DerivativeParams;
 use Piwigo\Derivative\SizingParams;
@@ -10,160 +11,173 @@ use Piwigo\Derivative\SizingParams;
  */
 final class ImageStdParams
 {
-    const IMG_SQUARE  = 'square';
-    const IMG_THUMB   = 'thumb';
-    const IMG_XXSMALL = '2small';
-    const IMG_XSMALL  = 'xsmall';
-    const IMG_SMALL   = 'small';
-    const IMG_MEDIUM  = 'medium';
-    const IMG_LARGE   = 'large';
-    const IMG_XLARGE  = 'xlarge';
-    const IMG_XXLARGE = 'xxlarge';
-    const IMG_CUSTOM  = 'custom';
+        const IMG_SQUARE  = 'square';
+        const IMG_THUMB   = 'thumb';
+        const IMG_XXSMALL = '2small';
+        const IMG_XSMALL  = 'xsmall';
+        const IMG_SMALL   = 'small';
+        const IMG_MEDIUM  = 'medium';
+        const IMG_LARGE   = 'large';
+        const IMG_XLARGE  = 'xlarge';
+        const IMG_XXLARGE = 'xxlarge';
+        const IMG_CUSTOM  = 'custom';
 
-    /** @var string[] */
-    private static $all_types = array(
-        self::IMG_SQUARE,
-        self::IMG_THUMB,
-        self::IMG_XXSMALL,
-        self::IMG_XSMALL,
-        self::IMG_SMALL,
-        self::IMG_MEDIUM,
-        self::IMG_LARGE,
-        self::IMG_XLARGE,
-        self::IMG_XXLARGE,
-    );
+        /** @var string[] */
+        private static $all_types = array(
+            self::IMG_SQUARE,
+            self::IMG_THUMB,
+            self::IMG_XXSMALL,
+            self::IMG_XSMALL,
+            self::IMG_SMALL,
+            self::IMG_MEDIUM,
+            self::IMG_LARGE,
+            self::IMG_XLARGE,
+            self::IMG_XXLARGE,
+        );
 
-    /** @var DerivativeParams[] */
-    private static $all_type_map = array();
-    /** @var DerivativeParams[] */
-    private static $type_map = array();
-    /** @var DerivativeParams[] */
-    private static $undefined_type_map = array();
-    /** @var WatermarkParams */
-    private static $watermark;
-    /** @var array */
-    public static $custom = array();
-    /** @var int */
-    public static $quality=95;
+        /** @var DerivativeParams[] */
+        private static $all_type_map = array();
+        /** @var DerivativeParams[] */
+        private static $type_map = array();
+        /** @var DerivativeParams[] */
+        private static $undefined_type_map = array();
+        /** @var WatermarkParams */
+        private static $watermark;
+        /** @var array */
+        public static $custom = array();
+        /** @var int */
+        public static $quality=95;
 
-  /**
-   * @return string[]
-   */
-  static function get_all_types()
-  {
-    return self::$all_types;
-  }
-
-  /**
-   * @return DerivativeParams[]
-   */
-  static function get_all_type_map()
-  {
-    return self::$all_type_map;
-  }
-
-  /**
-   * @return DerivativeParams[]
-   */
-  static function get_defined_type_map()
-  {
-    return self::$type_map;
-  }
-
-  /**
-   * @return DerivativeParams[]
-   */
-  static function get_undefined_type_map()
-  {
-    return self::$undefined_type_map;
-  }
-
-  /**
-   * @return DerivativeParams
-   */
-  static function get_by_type($type)
-  {
-    return self::$all_type_map[$type];
-  }
-
-  /**
-   * @param int $w
-   * @param int $h
-   * @param float $crop
-   * @param int $minw
-   * @param int $minh
-   * @return DerivativeParams
-   */
-  static function get_custom($w, $h, $crop=0, $minw=null, $minh=null)
-  {
-    $params = new DerivativeParams( new SizingParams( array($w,$h), $crop, array($minw,$minh)) );
-    self::apply_global($params);
-
-    $key = array();
-    $params->add_url_tokens($key);
-    $key = implode('_',$key);
-    if ( @self::$custom[$key] < time() - 24*3600)
+    /**
+     * @return string[]
+     */
+    static function get_all_types()
     {
-      self::$custom[$key] = time();
-      self::save();
+        return self::$all_types;
     }
-    return $params;
-  }
 
-  /**
-   * @return WatermarkParams
-   */
-  static function get_watermark()
-  {
-    return self::$watermark;
-  }
-
-  /**
-   * Loads derivative configuration from database or initializes it.
-   */
-  static function load_from_db()
-  {
-    global $conf;
-    $arr = @unserialize($conf['derivatives']);
-
-    if (false!==$arr)
+    /**
+     * @return DerivativeParams[]
+     */
+    static function get_all_type_map()
     {
-      self::$type_map = $arr['d'];
-      self::$watermark = @$arr['w'];
-      if (!self::$watermark) self::$watermark = new WatermarkParams();
-      self::$custom = @$arr['c'];
-      if (!self::$custom) self::$custom = array();
-      if (isset($arr['q'])) self::$quality = $arr['q'];
+        return self::$all_type_map;
     }
-    else
+
+    /**
+     * @return DerivativeParams[]
+     */
+    static function get_defined_type_map()
     {
-      self::$watermark = new WatermarkParams();
-      self::$type_map = self::get_default_sizes();
-      self::save();
+        return self::$type_map;
     }
-    self::build_maps();
-  }
 
-  /**
-   * @param WatermarkParams $watermark
-   */
-  static function set_watermark($watermark)
-  {
-    self::$watermark = $watermark;
-  }
+    /**
+     * @return DerivativeParams[]
+     */
+    static function get_undefined_type_map()
+    {
+        return self::$undefined_type_map;
+    }
 
-  /**
-   * @see ImageStdParams::save()
-   *
-   * @param DerivativeParams[] $map
-   */
-  static function set_and_save($map)
-  {
-    self::$type_map = $map;
-    self::save();
-    self::build_maps();
-  }
+    /**
+     * @return DerivativeParams
+     */
+    static function get_by_type($type)
+    {
+        return self::$all_type_map[$type];
+    }
+
+    /**
+     * @param int $w
+     * @param int $h
+     * @param float $crop
+     * @param int $minw
+     * @param int $minh
+     * @return DerivativeParams
+     */
+    static function get_custom($w, $h, $crop=0, $minw=null, $minh=null)
+    {
+        $params = new DerivativeParams( new SizingParams( array($w,$h), $crop, array($minw,$minh)) );
+        self::apply_global($params);
+
+        $key = array();
+        $params->add_url_tokens($key);
+        $key = implode('_',$key);
+        if ( @self::$custom[$key] < time() - 24*3600)
+        {
+            self::$custom[$key] = time();
+            self::save();
+        }
+        return $params;
+    }
+
+    /**
+     * @return WatermarkParams
+     */
+    static function get_watermark()
+    {
+        return self::$watermark;
+    }
+
+    /**
+     * Loads derivative configuration from database or initializes it.
+     */
+    static function loadFromDb(Application $app)
+    {
+        $conf = unserialize($app['conf']['derivatives']);
+
+        if (false!==$conf)
+        {
+            self::$type_map  = $conf['d'];
+            self::$watermark = $conf['w'];
+
+            if (!self::$watermark)
+            {
+                self::$watermark = new WatermarkParams();
+            }
+
+            self::$custom = $conf['c'];
+
+            if (!self::$custom)
+            {
+                self::$custom = array();
+            }
+
+            if (isset($conf['q']))
+            {
+                self::$quality = $conf['q'];
+            }
+        }
+        else
+        {
+            self::$watermark = new WatermarkParams();
+            self::$type_map  = self::get_default_sizes();
+            self::save();
+        }
+
+        self::build_maps();
+    }
+
+    /**
+     * @param WatermarkParams $watermark
+     */
+    static function set_watermark($watermark)
+    {
+        self::$watermark = $watermark;
+    }
+
+    /**
+     * @see ImageStdParams::save()
+     *
+     * @param DerivativeParams[] $map
+     */
+    static function set_and_save($map)
+    {
+        self::$type_map = $map;
+        self::save();
+        self::build_maps();
+    }
 
     /**
      * Saves the configuration in database.
@@ -173,10 +187,10 @@ final class ImageStdParams
         global $conf;
 
         $ser = serialize(array(
-            'd' => self::$type_map,
-            'q' => self::$quality,
-            'w' => self::$watermark,
-            'c' => self::$custom,
+                'd' => self::$type_map,
+                'q' => self::$quality,
+                'w' => self::$watermark,
+                'c' => self::$custom,
         ));
 
         conf_update_param('derivatives', addslashes($ser));
@@ -200,55 +214,59 @@ final class ImageStdParams
         );
 
         $now = time();
-        
+
         foreach($arr as $params)
         {
             $params->last_mod_time = $now;
         }
-        
+
         return $arr;
     }
 
-  /**
-   * Compute 'apply_watermark'
-   *
-   * @param DerivativeParams $params
-   */
-  static function apply_global($params)
-  {
-    $params->use_watermark = !empty(self::$watermark->file) &&
-        (self::$watermark->min_size[0]<=$params->sizing->ideal_size[0]
-        or self::$watermark->min_size[1]<=$params->sizing->ideal_size[1] );
-  }
-
-  /**
-   * Build 'type_map', 'all_type_map' and 'undefined_type_map'.
-   */
-  private static function build_maps()
-  {
-    foreach (self::$type_map as $type=>$params)
+    /**
+     * Compute 'apply_watermark'
+     *
+     * @param DerivativeParams $params
+     */
+    static function apply_global($params)
     {
-      $params->type = $type;
-      self::apply_global($params);
+        $params->use_watermark = !empty(self::$watermark->file) &&
+                (self::$watermark->min_size[0]<=$params->sizing->ideal_size[0]
+                or self::$watermark->min_size[1]<=$params->sizing->ideal_size[1] );
     }
-    self::$all_type_map = self::$type_map;
 
-    for ($i=0; $i<count(self::$all_types); $i++)
+    /**
+     * Build 'type_map', 'all_type_map' and 'undefined_type_map'.
+     */
+    private static function build_maps()
     {
-      $tocheck = self::$all_types[$i];
-      if (!isset(self::$type_map[$tocheck]))
-      {
-        for ($j=$i-1; $j>=0; $j--)
+        foreach (self::$type_map as $type=>$params)
         {
-          $target = self::$all_types[$j];
-          if (isset(self::$type_map[$target]))
-          {
-            self::$all_type_map[$tocheck] = self::$type_map[$target];
-            self::$undefined_type_map[$tocheck] = $target;
-            break;
-          }
+            $params->type = $type;
+            self::apply_global($params);
         }
-      }
+
+        self::$all_type_map = self::$type_map;
+
+        for ($i=0; $i<count(self::$all_types); $i++)
+        {
+            $tocheck = self::$all_types[$i];
+
+            if (!isset(self::$type_map[$tocheck]))
+            {
+                for ($j=$i-1; $j>=0; $j--)
+                {
+                    $target = self::$all_types[$j];
+
+                    if (isset(self::$type_map[$target]))
+                    {
+                        self::$all_type_map[$tocheck] = self::$type_map[$target];
+                        self::$undefined_type_map[$tocheck] = $target;
+
+                        break;
+                    }
+                }
+            }
+        }
     }
-  }
 }
