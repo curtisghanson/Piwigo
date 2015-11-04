@@ -1,0 +1,36 @@
+{% extends 'base.html.twig' %}
+{% block main %}
+<main class="spacer-top full-width">
+    {% for image in images %}
+        {% if 1 == loop.index % 6 %}<div class="row">{% endif %}
+            <div class="large-2 columns">
+                <div class="panel">
+                    <p>
+                        <img src="{{ image.path }}"/>
+                    </p>
+                </div>
+            </div>
+        {% if 0 == loop.index % 6 or loop.last %}</div>{% endif %}
+    {% endfor %}
+    <div class="row">
+        <div class="large-6 columns">
+            <div class="panel">
+                <h5>Panel Title</h5>
+                <p>This is a six columns grid panel with an arbitrary height. Bacon ipsum dolor sit amet salami ham hock biltong ball tip drumstick sirloin pancetta meatball short loin.</p>
+            </div>
+        </div>
+        <div class="large-3 columns">
+            <div class="panel">
+                <h5>Panel Title</h5>
+                <p>This is a three columns grid panel with an arbitrary height.</p>
+            </div>
+        </div>
+        <div class="large-3 columns">
+            <div class="panel">
+                <h5>Panel Title</h5>
+                <p>This is a three columns grid panel with an arbitrary height.</p>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock main %}
