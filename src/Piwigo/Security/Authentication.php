@@ -5,6 +5,11 @@ use Piwigo\Model\User;
 
 class Authentication
 {
-    // foobar
+    private $user;
+    private $authToken;
 
+    public function __construct()
+    {
+        // foobar
+    }
 }

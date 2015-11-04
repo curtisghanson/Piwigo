@@ -132,7 +132,6 @@ ImageStdParams::loadFromDb($app);
 
 session_start();
 load_plugins();
-var_dump($_SESSION);exit;
 
 // users can have defined a custom order pattern, incompatible with GUI form
 if (isset($conf['order_by_custom']))

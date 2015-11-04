@@ -3,7 +3,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 // by default we start with guest
 $user['id'] = $conf['guest_id'];
-
+var_dump(session_name());exit;
 if (isset($_COOKIE[session_name()]))
 {
   if (isset($_GET['act']) and $_GET['act'] == 'logout')
