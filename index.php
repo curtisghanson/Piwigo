@@ -18,7 +18,6 @@ include(PHPWG_ROOT_PATH.'include/section_init.inc.php');
 // Check Access and exit when user status is not ok
 check_status(Authorization::ACCESS_GUEST);
 
-
 // access authorization check
 if (isset($page['category']))
 {

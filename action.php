@@ -1,12 +1,11 @@
 <?php
 require_once __DIR__ . '/vendor/autoload.php';
-
-define('PHPWG_ROOT_PATH','./');
-session_cache_limiter('public');
 include_once(PHPWG_ROOT_PATH.'include/common.inc.php');
 
+session_cache_limiter('public');
+
 // Check Access and exit when user status is not ok
-check_status(ACCESS_GUEST);
+$app['auth']->isGranted('ACCESS_GUEST');
 
 function guess_mime_type($ext)
 {
